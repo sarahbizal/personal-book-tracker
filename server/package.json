@@ -1,0 +1,21 @@
+{
+  "name": "personal-book-tracker",
+  "version": "1.0.0",
+  "description": "*Personal Book Tracker*\r As a self proclaimed book lover, I keep coming back to this idea of a book tracker to tinker with. \r This time I'm focusing on the following stack:\r - Typescript\r - Express\r - PostgreSQL\r - React",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sarahbizal/personal-book-tracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/sarahbizal/personal-book-tracker/issues"
+  },
+  "homepage": "https://github.com/sarahbizal/personal-book-tracker#readme"
+}
