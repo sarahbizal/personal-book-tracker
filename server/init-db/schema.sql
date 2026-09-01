@@ -4,7 +4,7 @@ CREATE TABLE books (
     author TEXT NOT NULL,
     genre TEXT NOT NULL,
     read_status TEXT NOT NULL DEFAULT 'want to read',
-    cover_img_text TEXT
+    cover_img_url TEXT
 );
 
 CREATE TABLE ratings (

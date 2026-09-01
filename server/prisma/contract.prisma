@@ -1,21 +1,26 @@
 // use prisma-next
+// Contract inferred from the live database schema. Edit as needed, then run `prisma contract emit`.
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String?
-  name      String?
-  posts     Post[]
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.updatedAtString()
+model Books {
+  id            Int       @id(map: "books_pkey") @default(autoincrement())
+  title         String
+  author        String
+  genre         String
+  readStatus    String    @default("want to read") @map("read_status")
+  coverImageUrl String?   @map("cover_image_url")
+  ratings       Ratings[]
+
+  @@map("books")
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  Int
-  createdAt TimestamptzString @default(now())
-  updatedAt temporal.updatedAtString()
+model Ratings {
+  id             Int     @id(map: "ratings_pkey") @default(autoincrement())
+  bookId         Int     @map("book_id")
+  rating         Int?
+  bookReviewText String? @map("book_review_text")
+  dateFinished   Date?   @map("date_finished")
+  book           Books   @relation(fields: [bookId], references: [id], map: "ratings_book_id_fkey", index: false)
+
+  @@check(expression: "((rating >= 1) AND (rating <= 5))", map: "ratings_rating_check")
+  @@map("ratings")
 }
