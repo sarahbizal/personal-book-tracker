@@ -9,4 +9,4 @@
 
 
 *Node/Express Steps*
-1. Run `node src/index.ts` to compile and test the server
+1. Run `npx tsx src/index.ts` to compile and test the server
