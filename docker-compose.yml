@@ -3,6 +3,8 @@ services:
     image: postgres:16
     container_name: book-tracker-db
     restart: unless-stopped
+    env_file:
+      - ./server/.env
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
