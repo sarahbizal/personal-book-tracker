@@ -53,6 +53,28 @@ app.post("/ratings", async (req: Request, res: Response) => {
   res.json(newRating);
 });
 
+app.put("/books/:id", async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const { title, author, genre } = req.body;
+  const editBook = await db.orm.public.Books.where({ id }).update({
+    title,
+    author,
+    genre,
+  });
+  res.json(editBook);
+});
+
+app.put("/ratings/:id", async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const { rating, bookReviewText, dateFinished } = req.body;
+  const editRating = await db.orm.public.Ratings.where({ id }).update({
+    rating,
+    bookReviewText,
+    dateFinished: dateFinished ? Temporal.PlainDate.from(dateFinished) : null,
+  });
+  res.json(editRating);
+});
+
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
