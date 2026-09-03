@@ -75,6 +75,18 @@ app.put("/ratings/:id", async (req: Request, res: Response) => {
   res.json(editRating);
 });
 
+app.delete("/books/:id", async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const deletedBook = await db.orm.public.Books.where({ id }).delete();
+  res.json(deletedBook);
+});
+
+app.delete("/ratings/:id", async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const deletedRating = await db.orm.public.Ratings.where({ id }).delete();
+  res.json(deletedRating);
+});
+
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
