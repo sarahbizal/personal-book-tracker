@@ -9,10 +9,8 @@ CREATE TABLE books (
 
 CREATE TABLE ratings (
     id SERIAL PRIMARY KEY,
-    book_id INTEGER NOT NULL REFERENCES books(id),
+    book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
     book_review_text TEXT,
     date_finished DATE
 );
-
-SELECT * books

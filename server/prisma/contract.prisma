@@ -19,7 +19,7 @@ model Ratings {
   rating         Int?
   bookReviewText String? @map("book_review_text")
   dateFinished   Date?   @map("date_finished")
-  book           Books   @relation(fields: [bookId], references: [id], map: "ratings_book_id_fkey", index: false)
+  book           Books   @relation(fields: [bookId], references: [id], onDelete: Cascade, map: "ratings_book_id_fkey", index: false)
 
   @@check(expression: "((rating >= 1) AND (rating <= 5))", map: "ratings_rating_check")
   @@map("ratings")

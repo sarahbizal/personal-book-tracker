@@ -282,6 +282,7 @@
               "foreignKeys": [
                 {
                   "name": "ratings_book_id_fkey",
+                  "onDelete": "cascade",
                   "source": {
                     "columns": [
                       "book_id"
@@ -313,7 +314,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "315eab86a805ea29a96b05e066bc48d42603d7499dbab2bd4b44549bd111a119"
+    "storageHash": "7afc410cbc296e6eef2389a3d56bd8e1f0b892917bb0d94ea89469e9aea47f1f"
   },
   "capabilities": {
     "postgres": {
