@@ -32,11 +32,13 @@ app.get("/ratings", async (req: Request, res: Response) => {
 });
 
 app.post("/books", async (req: Request, res: Response) => {
-  const { title, author, genre } = req.body;
+  const { title, author, genre, readStatus, coverImageUrl } = req.body;
   const newBook = await db.orm.public.Books.create({
     title,
     author,
     genre,
+    readStatus,
+    coverImageUrl,
   });
   res.json(newBook);
 });
@@ -54,11 +56,13 @@ app.post("/ratings", async (req: Request, res: Response) => {
 
 app.put("/books/:id", async (req: Request, res: Response) => {
   const id = Number(req.params.id);
-  const { title, author, genre } = req.body;
+  const { title, author, genre, readStatus, coverImageUrl } = req.body;
   const editBook = await db.orm.public.Books.where({ id }).update({
     title,
     author,
     genre,
+    readStatus,
+    coverImageUrl,
   });
   res.json(editBook);
 });
