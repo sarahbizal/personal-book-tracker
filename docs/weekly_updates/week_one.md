@@ -13,6 +13,7 @@
 - Researched Express fundamentals
 - Researched Typescript fundamentals, coded along to a few tutorials, and set up first route with GET /health
 - Reasearched Prisma fundamentals and connected Express to Postgres via Prisma
+- Set up GET /books and tested connection
 
 *Challenges*
 
