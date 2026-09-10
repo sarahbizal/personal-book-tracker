@@ -73,7 +73,9 @@ app.put("/ratings/:id", async (req: Request, res: Response) => {
   const editRating = await db.orm.public.Ratings.where({ id }).update({
     rating,
     bookReviewText,
-    dateFinished: dateFinished ? Temporal.PlainDate.from(dateFinished) : null,
+    ...(dateFinished
+      ? { dateFinished: Temporal.PlainDate.from(dateFinished) }
+      : {}),
   });
   res.json(editRating);
 });
