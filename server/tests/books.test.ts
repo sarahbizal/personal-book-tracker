@@ -23,7 +23,7 @@ describe("POST /books", () => {
     }
   });
 
-  it("returns book with completed fields", async () => {
+  it("returns a new book with completed fields", async () => {
     const data = {
       title: "Moby Dick",
       author: "Ernest Hemmingway",
@@ -40,4 +40,47 @@ describe("POST /books", () => {
     expect(book.body.readStatus).toBe(data.readStatus);
     expect(book.body.coverImageUrl).toBe(data.coverImageUrl);
   });
+});
+
+describe("PUT /books/:id", () => {
+  let existingBookId: number | undefined;
+  const createData = {
+    title: "Moby Dick",
+    author: "Ernest Hemmingway",
+    genre: "Adventure",
+    readStatus: "want to read",
+    coverImageUrl:
+      "https://en.wikipedia.org/wiki/File:Moby-Dick_FE_title_page.jpg",
+  };
+
+  beforeAll(async () => {
+    const books = await request(app).get("/books");
+    expect(Array.isArray(books.body)).toBe(true);
+
+    const createdBook = await request(app).post("/books").send(createData);
+    existingBookId = createdBook.body.id;
+  });
+
+  afterAll(async () => {
+    if (existingBookId) {
+      await request(app).delete(`/books/${existingBookId}`);
+    }
+  });
+
+  it("modifies specific book fields", async () => {
+    const updateData = {
+      readStatus: "read",
+    };
+
+    const modifiedBook = await request(app)
+      .put(`/books/${existingBookId}`)
+      .send(updateData);
+    expect(modifiedBook).toBeTruthy();
+    expect(modifiedBook.body.readStatus).toBe(updateData.readStatus);
+    expect(modifiedBook.body.title).toBe(createData.title);
+  });
+});
+
+describe("DELETE /books/:id", () => {
+  it("deletes individual books", async () => {});
 });
