@@ -21,6 +21,7 @@
   "homepage": "https://github.com/sarahbizal/personal-book-tracker#readme",
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.8",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "temporal-polyfill": "^1.0.4"

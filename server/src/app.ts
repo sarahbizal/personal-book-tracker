@@ -5,7 +5,13 @@ import { db } from "../prisma/db.js";
 import { Temporal } from "temporal-polyfill";
 
 export const app: Express = express();
+const cors = require("cors");
 
+app.use(
+  cors({
+    origin: ["http://localhost:5173/"],
+  }),
+);
 app.use(express.json());
 
 //Test database connection
