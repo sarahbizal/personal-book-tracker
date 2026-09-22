@@ -1,3 +1,5 @@
+import placeholderCover from "../../assets/placeholder-cover.jpg";
+
 export interface BookCardProps {
   id: number;
   title: string;
@@ -16,7 +18,11 @@ function BookCard({
 }: BookCardProps) {
   return (
     <div>
-      <img src={coverImageUrl ?? "placeholder.jpg"} alt={title} />
+      <img
+        src={coverImageUrl ?? placeholderCover}
+        alt={title}
+        style={{ width: "150px", height: "auto" }}
+      />
       <h3>{title}</h3>
       <p>{author}</p>
       <p>{genre}</p>
