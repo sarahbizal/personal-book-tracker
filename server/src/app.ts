@@ -3,13 +3,13 @@ import express, { type Express, type Request, type Response } from "express";
 import "dotenv/config";
 import { db } from "../prisma/db.js";
 import { Temporal } from "temporal-polyfill";
+import cors from "cors";
 
 export const app: Express = express();
-const cors = require("cors");
 
 app.use(
   cors({
-    origin: ["http://localhost:5173/"],
+    origin: ["http://localhost:5173"],
   }),
 );
 app.use(express.json());
@@ -21,11 +21,6 @@ app.get("/health", (req: Request, res: Response) => {
   res.json({ status: "ok" });
 });
 
-app.get("/books", async (req: Request, res: Response) => {
-  const books = await db.orm.public.Books.select("id", "title", "author").all();
-  res.json(books);
-});
-
 app.get("/ratings", async (req: Request, res: Response) => {
   const ratings = await db.orm.public.Ratings.select(
     "id",
@@ -35,6 +30,20 @@ app.get("/ratings", async (req: Request, res: Response) => {
     "dateFinished",
   ).all();
   res.json(ratings);
+});
+
+app.get("/books", async (req: Request, res: Response) => {
+  const title = req.query.title;
+
+  let books;
+  if (title) {
+    books = await db.orm.public.Books.where((book) =>
+      book.title.ilike(`%${title}%`),
+    ).all();
+  } else {
+    books = await db.orm.public.Books.all();
+  }
+  res.json(books);
 });
 
 app.post("/books", async (req: Request, res: Response) => {
