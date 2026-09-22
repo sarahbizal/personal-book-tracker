@@ -3,9 +3,56 @@ import request from "supertest";
 import { app } from "../src/app.js";
 
 describe("GET /books", () => {
+  let existingBookId: number | undefined;
+  const createData = {
+    title: "The Great Gatsby",
+    author: "F. Scott Fitzgerald",
+    genre: "Classic",
+  };
+
+  beforeAll(async () => {
+    const createdBook = await request(app).post("/books").send(createData);
+    existingBookId = createdBook.body.id;
+  });
+
+  afterAll(async () => {
+    if (existingBookId) {
+      await request(app).delete(`/books/${existingBookId}`);
+    }
+  });
+
   it("returns an array", async () => {
     const books = await request(app).get("/books");
     expect(Array.isArray(books.body)).toBe(true);
+  });
+
+  it("returns matching books when searching by title", async () => {
+    const response = await request(app)
+      .get("/books")
+      .query({ title: "Gatsby" });
+    const found = response.body.some((book: any) => book.id === existingBookId);
+    expect(found).toBe(true);
+  });
+
+  it("is case-insensitive", async () => {
+    const response = await request(app)
+      .get("/books")
+      .query({ title: "gatsby" });
+    const found = response.body.some((book: any) => book.id === existingBookId);
+    expect(found).toBe(true);
+  });
+
+  it("returns an empty array when nothing matches", async () => {
+    const response = await request(app)
+      .get("/books")
+      .query({ title: "zzzznonsensexyz" });
+    expect(response.body).toEqual([]);
+  });
+
+  it("returns all books when no search term is provided", async () => {
+    const response = await request(app).get("/books");
+    const found = response.body.some((book: any) => book.id === existingBookId);
+    expect(found).toBe(true);
   });
 });
 
