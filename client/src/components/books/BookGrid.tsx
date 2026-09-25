@@ -1,7 +1,7 @@
 import BookCard from "./BookCard";
 import type { BookCardProps } from "./BookCard";
 
-interface BookGridProps {
+export interface BookGridProps {
   books: BookCardProps[];
 }
 

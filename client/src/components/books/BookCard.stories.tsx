@@ -30,3 +30,14 @@ export const NoCoverImage: Story = {
     coverImageUrl: null,
   },
 };
+
+export const InvalidCoverUrl: Story = {
+  args: {
+    id: 1,
+    title: "Title",
+    author: "Author",
+    genre: "Genre",
+    readStatus: "Read Status",
+    coverImageUrl: "image",
+  },
+};
