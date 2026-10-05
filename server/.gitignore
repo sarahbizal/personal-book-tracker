@@ -4,3 +4,4 @@ dist/
 
 # Vitest reports and artifacts
 .vitest/
+coverage/
