@@ -1,8 +1,8 @@
 import BookCard from "./BookCard";
-import type { BookCardProps } from "./BookCard";
+import type { Book } from "../../types/book";
 
-export interface BookGridProps {
-  books: BookCardProps[];
+interface BookGridProps {
+  books: Book[];
 }
 
 function BookGrid({ books }: BookGridProps) {
@@ -10,6 +10,7 @@ function BookGrid({ books }: BookGridProps) {
     <div>
       {books.map((book) => (
         <BookCard
+          key={book.id}
           id={book.id}
           title={book.title}
           author={book.author}

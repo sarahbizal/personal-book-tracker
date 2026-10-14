@@ -1,17 +1,16 @@
-import type { BookCardProps } from "../components/books/BookCard";
-import GenreList from "../components/sidebar/GenreList";
+import type { Book } from "../types/book";
 import BookGrid from "../components/books/BookGrid";
 import { useState } from "react";
 import SearchBar from "../components/search/SearchBar";
-//import SideBar from "../components/layout/Sidebar";
+import SideBar from "../components/layout/Sidebar";
 
 //Directly renders components for now. Eventually will be swapped out for wrapper component and the props will pass through them.
 function BooksMainPage() {
-  const [books, setBooks] = useState<BookCardProps[]>([]);
-  const items = ["Adventure", "Horror", "Romance", "Fantasy"];
+  const [books, setBooks] = useState<Book[]>([]);
+  const genres = ["Adventure", "Horror", "Romance", "Fantasy"];
 
-  const handleSelectItem = (item: string) => {
-    console.log(item);
+  const handleSelectGenre = (genre: string) => {
+    console.log(genre);
   };
 
   const handleSearch = async (title: string) => {
@@ -24,10 +23,9 @@ function BooksMainPage() {
 
   return (
     <div>
-      <GenreList items={items} onSelectItem={handleSelectItem} />
+      <SideBar genres={genres} onSelectGenre={handleSelectGenre} />
       <BookGrid books={books} />
       <SearchBar onSearch={handleSearch} />
-      {/*<SideBar items={items} onSelectItem={handleSelectItem} />*/}
     </div>
   );
 }

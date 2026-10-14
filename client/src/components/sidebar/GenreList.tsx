@@ -7,17 +7,17 @@ interface GenreListProps {
 }
 
 function GenreList({ items, onSelectItem }: GenreListProps) {
-  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
 
   return (
     <ul className="genre-list">
-      {items.map((item, index) => (
+      {items.map((item) => (
         <GenreItem
           key={item}
           name={item}
-          isSelected={selectedIndex === index}
+          isSelected={selectedItem === item}
           onClick={() => {
-            setSelectedIndex(index);
+            setSelectedItem(item);
             onSelectItem(item);
           }}
         />
