@@ -1,7 +1,7 @@
 import placeholderCover from "../../assets/placeholder-cover.jpg";
 
-export interface BookCardProps {
-  id: number;
+interface BookCardProps {
+  id: number; // used to link the card to its detail page
   title: string;
   author: string;
   genre: string;

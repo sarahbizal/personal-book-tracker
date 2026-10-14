@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export interface SearchBarProps {
+interface SearchBarProps {
   onSearch: (title: string) => void;
 }
 
