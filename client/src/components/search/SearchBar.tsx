@@ -21,6 +21,7 @@ function SearchBar({ onSearch }: SearchBarProps) {
       <form onSubmit={handleSubmit}>
         <input
           type="text"
+          aria-label="Search books by title"
           placeholder="search..."
           value={searchQuery}
           onChange={handleSearchChange}

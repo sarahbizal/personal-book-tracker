@@ -1,7 +1,7 @@
 import type { Book } from "../types/book";
 import BookGrid from "../components/books/BookGrid";
 import { useState } from "react";
-import SearchBar from "../components/search/SearchBar";
+import Header from "../components/layout/Header";
 import SideBar from "../components/layout/Sidebar";
 
 //Directly renders components for now. Eventually will be swapped out for wrapper component and the props will pass through them.
@@ -23,9 +23,9 @@ function BooksMainPage() {
 
   return (
     <div>
+      <Header onSearch={handleSearch} />
       <SideBar genres={genres} onSelectGenre={handleSelectGenre} />
       <BookGrid books={books} />
-      <SearchBar onSearch={handleSearch} />
     </div>
   );
 }
