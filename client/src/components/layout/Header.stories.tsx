@@ -12,7 +12,18 @@ export default meta;
 
 type Story = StoryObj<typeof Header>;
 
-export const Primary: Story = {};
+export const Primary: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(
+      canvas.getByRole("heading", { level: 1, name: "Sarah's Reading Nook" }),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByRole("button", { name: "Open menu" }),
+    ).toBeInTheDocument();
+  },
+};
 
 export const SubmitSearch: Story = {
   play: async ({ args, canvasElement }) => {
