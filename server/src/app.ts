@@ -13,9 +13,16 @@ import { z } from "zod";
 
 export const app: Express = express();
 
+//Comma-separated list of sites allowed to call the API. Defaults to the Vite dev server
+//Browsers send origins without a trailing slash, so strip any to make them match
+export const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: corsOrigins,
   }),
 );
 app.use(express.json());
