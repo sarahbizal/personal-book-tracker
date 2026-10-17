@@ -179,3 +179,107 @@ describe("DELETE /books/:id", () => {
     expect(stillExists).toBe(false);
   });
 });
+
+describe("book failure cases", () => {
+  let existingBookId: number | undefined;
+  const missingBookId = 999999;
+
+  beforeAll(async () => {
+    const createdBook = await request(app).post("/books").send({
+      title: "Frankenstein",
+      author: "Mary Shelley",
+      genre: "Gothic Horror",
+    });
+    existingBookId = createdBook.body.id;
+  });
+
+  afterAll(async () => {
+    if (existingBookId) {
+      await request(app).delete(`/books/${existingBookId}`);
+    }
+  });
+
+  it("returns 201 when a book is created", async () => {
+    const response = await request(app).post("/books").send({
+      title: "Emma",
+      author: "Jane Austen",
+      genre: "Classic",
+    });
+    expect(response.status).toBe(201);
+    await request(app).delete(`/books/${response.body.id}`);
+  });
+
+  it("returns 400 when required fields are missing", async () => {
+    const response = await request(app)
+      .post("/books")
+      .send({ title: "No Author" });
+    expect(response.status).toBe(400);
+    expect(response.body.details.fieldErrors.author).toBeDefined();
+    expect(response.body.details.fieldErrors.genre).toBeDefined();
+  });
+
+  it("returns 400 when a required field is blank", async () => {
+    const response = await request(app)
+      .post("/books")
+      .send({ title: "   ", author: "Someone", genre: "Fiction" });
+    expect(response.status).toBe(400);
+    expect(response.body.details.fieldErrors.title).toBeDefined();
+  });
+
+  it("returns 400 when the body is not valid JSON", async () => {
+    const response = await request(app)
+      .post("/books")
+      .set("Content-Type", "application/json")
+      .send('{"title": "broken"');
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBeDefined();
+  });
+
+  it("returns 400 when the id is not a number", async () => {
+    const response = await request(app)
+      .put("/books/abc")
+      .send({ readStatus: "read" });
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 when an update has no fields", async () => {
+    const response = await request(app)
+      .put(`/books/${existingBookId}`)
+      .send({});
+    expect(response.status).toBe(400);
+  });
+
+  it("explains an empty update in formErrors", async () => {
+    const response = await request(app)
+      .put(`/books/${existingBookId}`)
+      .send({});
+    expect(response.body.details.formErrors).toContain(
+      "At least one field is required",
+    );
+  });
+
+  it("returns 400 when the id is too large for the database", async () => {
+    const response = await request(app).delete("/books/3000000000");
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 when the cover image url is not http or https", async () => {
+    const response = await request(app)
+      .put(`/books/${existingBookId}`)
+      .send({ coverImageUrl: "javascript:alert(1)" });
+    expect(response.status).toBe(400);
+    expect(response.body.details.fieldErrors.coverImageUrl).toBeDefined();
+  });
+
+  it("returns 404 when updating a book that does not exist", async () => {
+    const response = await request(app)
+      .put(`/books/${missingBookId}`)
+      .send({ readStatus: "read" });
+    expect(response.status).toBe(404);
+  });
+
+  it("returns 404 when deleting a book that does not exist", async () => {
+    const response = await request(app).delete(`/books/${missingBookId}`);
+    expect(response.status).toBe(404);
+  });
+});
