@@ -16,7 +16,7 @@ export const Primary: Story = {
         title: "Title One",
         author: "Author One",
         genre: "Fantasy",
-        readStatus: "Read",
+        readStatus: "read",
         coverImageUrl: null,
       },
       {
@@ -24,7 +24,7 @@ export const Primary: Story = {
         title: "Title Two",
         author: "Author Two",
         genre: "Horror",
-        readStatus: "Want to Read",
+        readStatus: "want to read",
         coverImageUrl: null,
       },
     ],

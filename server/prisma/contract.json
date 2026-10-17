@@ -191,6 +191,12 @@
         "entries": {
           "table": {
             "books": {
+              "checks": [
+                {
+                  "expression": "(read_status = ANY (ARRAY['want to read'::text, 'reading'::text, 'read'::text]))",
+                  "name": "books_read_status_check"
+                }
+              ],
               "columns": {
                 "author": {
                   "codecId": "pg/text@1",
@@ -314,7 +320,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "7afc410cbc296e6eef2389a3d56bd8e1f0b892917bb0d94ea89469e9aea47f1f"
+    "storageHash": "dc08b164e705b3dc38822f0a85d68af1d34b4745b1d9ebf01a2bb37131b56b15"
   },
   "capabilities": {
     "postgres": {

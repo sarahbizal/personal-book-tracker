@@ -10,6 +10,7 @@ model Books {
   coverImageUrl String?   @map("cover_image_url")
   ratings       Ratings[]
 
+  @@check(expression: "(read_status = ANY (ARRAY['want to read'::text, 'reading'::text, 'read'::text]))", map: "books_read_status_check")
   @@map("books")
 }
 

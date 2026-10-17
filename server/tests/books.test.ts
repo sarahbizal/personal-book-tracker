@@ -283,3 +283,86 @@ describe("book failure cases", () => {
     expect(response.status).toBe(404);
   });
 });
+
+describe("read status and genre", () => {
+  const createdBookIds: number[] = [];
+
+  async function createBook(data: object) {
+    const response = await request(app)
+      .post("/books")
+      .send({ title: "Dune", author: "Frank Herbert", ...data });
+    if (response.body.id) {
+      createdBookIds.push(response.body.id);
+    }
+    return response;
+  }
+
+  afterAll(async () => {
+    for (const id of createdBookIds) {
+      await request(app).delete(`/books/${id}`);
+    }
+  });
+
+  it("accepts each allowed read status", async () => {
+    for (const readStatus of ["want to read", "reading", "read"]) {
+      const response = await createBook({ genre: "Sci-Fi", readStatus });
+      expect(response.status).toBe(201);
+      expect(response.body.readStatus).toBe(readStatus);
+    }
+  });
+
+  it("returns 400 for a read status outside the allowed list", async () => {
+    const response = await createBook({
+      genre: "Sci-Fi",
+      readStatus: "Want To Read",
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.details.fieldErrors.readStatus).toBeDefined();
+  });
+
+  it("reuses an existing genre's spelling when the case differs", async () => {
+    await createBook({ genre: "Zzmatch Genre" });
+    const response = await createBook({ genre: "  zzmatch genre " });
+    expect(response.body.genre).toBe("Zzmatch Genre");
+  });
+
+  it("reuses an existing genre's spelling when editing", async () => {
+    await createBook({ genre: "Zzedit Genre" });
+    const created = await createBook({ genre: "Placeholder" });
+    const response = await request(app)
+      .put(`/books/${created.body.id}`)
+      .send({ genre: "ZZEDIT GENRE" });
+    expect(response.body.genre).toBe("Zzedit Genre");
+  });
+
+  it("lets a book fix the capitalization of its own genre", async () => {
+    const created = await createBook({ genre: "zzfix genre" });
+    const response = await request(app)
+      .put(`/books/${created.body.id}`)
+      .send({ genre: "Zzfix Genre" });
+    expect(response.body.genre).toBe("Zzfix Genre");
+  });
+
+  it("treats % and _ in a genre as plain text", async () => {
+    await createBook({ genre: "Zzwild Card" });
+    const percent = await createBook({ genre: "Zzwild%" });
+    expect(percent.body.genre).toBe("Zzwild%");
+    const underscore = await createBook({ genre: "Zzwild_Card" });
+    expect(underscore.body.genre).toBe("Zzwild_Card");
+  });
+
+  it("lists each genre once in alphabetical order", async () => {
+    await createBook({ genre: "Zzmatch Genre" });
+    await createBook({ genre: "Zzlist Genre" });
+    await createBook({ genre: "zzlist genre" });
+    const response = await request(app).get("/genres");
+    expect(response.status).toBe(200);
+    const matches = response.body.filter((genre: string) =>
+      genre.toLowerCase().startsWith("zzlist"),
+    );
+    expect(matches).toEqual(["Zzlist Genre"]);
+    expect(response.body.indexOf("Zzlist Genre")).toBeLessThan(
+      response.body.indexOf("Zzmatch Genre"),
+    );
+  });
+});
