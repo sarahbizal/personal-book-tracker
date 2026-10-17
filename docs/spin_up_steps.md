@@ -15,14 +15,21 @@
 1. Run `npx tsx src/index.ts` to compile and test the server
 
 
-*Test Database Steps*
+*Database Setup Steps*
 
-The tests I've made run against their own database that you will need to copy as a one time set up.
-1. With Postgres container running from the repo root
+The tables come from the Prisma migrations in `server/migrations/`. The first time the Docker volume is created, `server/init-db/create-test-db.sql` makes an empty `booktracker_test` database next to the dev one, and then the migrations build the tables in both. This is a one time setup.
+
+1. With the Postgres container running, copy the test env file and edit it with the test database URL and the real password
 
 ```
-    docker compose exec postgres psql -U booktracker -d booktracker -c "CREATE DATABASE booktracker_test;"
-    docker compose exec -T postgres psql -U booktracker -d booktracker_test < server/init-db/schema.sql
     cp server/.env.test.example server/.env.test
 ```
-2. Edit server/env.test with the test database URL and include the real password
+2. From `server/`, build the tables in both databases
+
+```
+    npm run db:migrate
+    npm run db:migrate:test
+```
+3. Check both are up to date with `npm run db:status` and `npm run db:status:test`, then run `npm test`
+
+If your Docker volume was created before the migrations existed, the tables are already there and the databases need a one time `npx prisma db sign --no-advance-ref --db <url>` instead. See `docs/schema_changes.md`.
