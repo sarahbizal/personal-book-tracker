@@ -3,38 +3,97 @@ import BookGrid from "../components/books/BookGrid";
 import { useEffect, useState } from "react";
 import Header from "../components/layout/Header";
 import SideBar from "../components/layout/Sidebar";
+import { fetchJson } from "../api";
 
 //Directly renders components for now. Eventually will be swapped out for wrapper component and the props will pass through them.
 function BooksMainPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
+  //A new object on every search, so searching the same title again still refetches
+  const [search, setSearch] = useState({ title: "" });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    //A newer search (or closing the page) sets ignore, so a slower older response is dropped
+    let ignore = false;
+
+    const loadBooks = async () => {
+      try {
+        const data = await fetchJson<Book[]>(
+          `/books?title=${encodeURIComponent(search.title)}`,
+        );
+        if (!ignore) {
+          setBooks(data);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError((err as Error).message);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+    loadBooks();
+
+    return () => {
+      ignore = true;
+    };
+  }, [search]);
+
+  useEffect(() => {
+    //Skips setting state if the page closes before the request finishes
+    let ignore = false;
+
     const loadGenres = async () => {
-      const response = await fetch("http://localhost:3000/genres");
-      const data = await response.json();
-      setGenres(data);
+      try {
+        const data = await fetchJson<string[]>("/genres");
+        if (!ignore) {
+          setGenres(data);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError((err as Error).message);
+        }
+      }
     };
     loadGenres();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const handleSelectGenre = (genre: string) => {
     console.log(genre);
   };
 
-  const handleSearch = async (title: string) => {
-    const response = await fetch(
-      `http://localhost:3000/books?title=${encodeURIComponent(title)}`,
-    );
-    const data = await response.json();
-    setBooks(data);
+  const handleSearch = (title: string) => {
+    setIsLoading(true);
+    setError(null);
+    setSearch({ title });
   };
+
+  let content;
+  if (isLoading) {
+    content = <p role="status">Loading books...</p>;
+  } else if (error) {
+    //The error message above already explains the empty grid
+    content = null;
+  } else if (books.length === 0) {
+    content = <p>No books found</p>;
+  } else {
+    content = <BookGrid books={books} />;
+  }
 
   return (
     <div>
       <Header onSearch={handleSearch} />
       <SideBar genres={genres} onSelectGenre={handleSelectGenre} />
-      <BookGrid books={books} />
+      {error && <p role="alert">{error}</p>}
+      {content}
     </div>
   );
 }
