@@ -57,7 +57,7 @@ describe("POST /ratings", () => {
   });
 });
 
-describe("PUT /ratings/:id", () => {
+describe("PATCH /ratings/:id", () => {
   let createdRatingId: number | undefined;
   let createData: any;
 
@@ -88,7 +88,7 @@ describe("PUT /ratings/:id", () => {
     };
 
     const modifiedRating = await request(app)
-      .put(`/ratings/${createdRatingId}`)
+      .patch(`/ratings/${createdRatingId}`)
       .send(updateData);
     expect(modifiedRating).toBeTruthy();
     expect(modifiedRating.body.bookReviewText).toBe(updateData.bookReviewText);
@@ -97,14 +97,13 @@ describe("PUT /ratings/:id", () => {
 
   it("modifies all rating fields", async () => {
     let updateData = {
-      bookId: existingBookId,
       rating: 2,
       bookReviewText: "Actually decided I don't like it",
       dateFinished: "2002-04-03",
     };
 
     const modifiedRating = await request(app)
-      .put(`/ratings/${createdRatingId}`)
+      .patch(`/ratings/${createdRatingId}`)
       .send(updateData);
     expect(modifiedRating).toBeTruthy();
     expect(modifiedRating.body.rating).toBe(updateData.rating);
@@ -184,14 +183,50 @@ describe("rating failure cases", () => {
     expect(response.status).toBe(400);
   });
 
-  it("returns 400 when the only update is a null date", async () => {
+  it("clears the date when dateFinished is sent as null", async () => {
+    const created = await request(app)
+      .post("/ratings")
+      .send({ bookId: existingBookId, rating: 3, dateFinished: "2026-01-15" });
+    const response = await request(app)
+      .patch(`/ratings/${created.body.id}`)
+      .send({ dateFinished: null });
+    expect(response.status).toBe(200);
+    expect(response.body.dateFinished).toBeNull();
+    expect(response.body.rating).toBe(3);
+    await request(app).delete(`/ratings/${created.body.id}`);
+  });
+
+  it("clears the rating and review when sent as null", async () => {
+    const created = await request(app).post("/ratings").send({
+      bookId: existingBookId,
+      rating: 4,
+      bookReviewText: "Loved it",
+      dateFinished: "2026-01-15",
+    });
+    const response = await request(app)
+      .patch(`/ratings/${created.body.id}`)
+      .send({ rating: null, bookReviewText: null });
+    expect(response.status).toBe(200);
+    expect(response.body.rating).toBeNull();
+    expect(response.body.bookReviewText).toBeNull();
+    expect(response.body.dateFinished).toBe("2026-01-15");
+    await request(app).delete(`/ratings/${created.body.id}`);
+  });
+
+  it("no longer accepts PUT for updates", async () => {
     const created = await request(app)
       .post("/ratings")
       .send({ bookId: existingBookId, rating: 3 });
     const response = await request(app)
       .put(`/ratings/${created.body.id}`)
-      .send({ dateFinished: null });
-    expect(response.status).toBe(400);
+      .send({ rating: 1 });
+    expect(response.status).toBe(404);
+
+    const ratings = await request(app).get("/ratings");
+    const unchanged = ratings.body.find(
+      (rating: any) => rating.id === created.body.id,
+    );
+    expect(unchanged.rating).toBe(3);
     await request(app).delete(`/ratings/${created.body.id}`);
   });
 
@@ -204,7 +239,7 @@ describe("rating failure cases", () => {
 
   it("returns 404 when updating a rating that does not exist", async () => {
     const response = await request(app)
-      .put(`/ratings/${missingId}`)
+      .patch(`/ratings/${missingId}`)
       .send({ rating: 3 });
     expect(response.status).toBe(404);
   });
