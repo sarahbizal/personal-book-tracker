@@ -37,7 +37,7 @@ const bookCreateSchema = z.object({
   author: requiredText,
   genre: requiredText,
   readStatus: readStatus.exactOptional(),
-  coverImageUrl: httpUrl.exactOptional(),
+  coverImageUrl: httpUrl.nullable().exactOptional(),
 });
 
 const bookUpdateSchema = z
@@ -46,7 +46,7 @@ const bookUpdateSchema = z
     author: requiredText.exactOptional(),
     genre: requiredText.exactOptional(),
     readStatus: readStatus.exactOptional(),
-    coverImageUrl: httpUrl.exactOptional(),
+    coverImageUrl: httpUrl.nullable().exactOptional(),
   })
   .refine((body) => Object.keys(body).length > 0, {
     message: "At least one field is required",
@@ -54,8 +54,8 @@ const bookUpdateSchema = z
 
 const ratingCreateSchema = z.object({
   bookId: dbId,
-  rating: z.number().int().min(1).max(5).exactOptional(),
-  bookReviewText: z.string().exactOptional(),
+  rating: z.number().int().min(1).max(5).nullable().exactOptional(),
+  bookReviewText: z.string().nullable().exactOptional(),
   dateFinished: z.iso.date().nullable().exactOptional(),
 });
 
@@ -167,7 +167,7 @@ app.post("/ratings", async (req: Request, res: Response) => {
   res.status(201).json(newRating);
 });
 
-app.put("/books/:id", async (req: Request, res: Response) => {
+app.patch("/books/:id", async (req: Request, res: Response) => {
   const id = idParam.safeParse(req.params.id);
   if (!id.success) {
     sendInvalidId(res);
@@ -195,7 +195,7 @@ app.put("/books/:id", async (req: Request, res: Response) => {
   res.json(editBook);
 });
 
-app.put("/ratings/:id", async (req: Request, res: Response) => {
+app.patch("/ratings/:id", async (req: Request, res: Response) => {
   const id = idParam.safeParse(req.params.id);
   if (!id.success) {
     sendInvalidId(res);
@@ -207,18 +207,19 @@ app.put("/ratings/:id", async (req: Request, res: Response) => {
     return;
   }
 
+  //Not sent leaves a field alone, null clears it
   const { dateFinished, ...fields } = body.data;
   const changes = {
     ...fields,
-    ...(dateFinished
-      ? { dateFinished: Temporal.PlainDate.from(dateFinished) }
-      : {}),
+    ...(dateFinished === undefined
+      ? {}
+      : {
+          dateFinished:
+            dateFinished === null
+              ? null
+              : Temporal.PlainDate.from(dateFinished),
+        }),
   };
-  //A null dateFinished is skipped, which can leave nothing to update
-  if (Object.keys(changes).length === 0) {
-    res.status(400).json({ error: "No fields to update" });
-    return;
-  }
 
   const editRating = await db.orm.public.Ratings.where({
     id: id.data,

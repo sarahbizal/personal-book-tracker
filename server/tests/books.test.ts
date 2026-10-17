@@ -89,7 +89,7 @@ describe("POST /books", () => {
   });
 });
 
-describe("PUT /books/:id", () => {
+describe("PATCH /books/:id", () => {
   let existingBookId: number | undefined;
   const createData = {
     title: "Moby Dick",
@@ -120,7 +120,7 @@ describe("PUT /books/:id", () => {
     };
 
     const modifiedBook = await request(app)
-      .put(`/books/${existingBookId}`)
+      .patch(`/books/${existingBookId}`)
       .send(updateData);
     expect(modifiedBook).toBeTruthy();
     expect(modifiedBook.body.readStatus).toBe(updateData.readStatus);
@@ -138,7 +138,7 @@ describe("PUT /books/:id", () => {
     };
 
     const modifiedBook = await request(app)
-      .put(`/books/${existingBookId}`)
+      .patch(`/books/${existingBookId}`)
       .send(updateData);
     expect(modifiedBook).toBeTruthy();
     expect(modifiedBook.body.title).toBe(updateData.title);
@@ -237,21 +237,21 @@ describe("book failure cases", () => {
 
   it("returns 400 when the id is not a number", async () => {
     const response = await request(app)
-      .put("/books/abc")
+      .patch("/books/abc")
       .send({ readStatus: "read" });
     expect(response.status).toBe(400);
   });
 
   it("returns 400 when an update has no fields", async () => {
     const response = await request(app)
-      .put(`/books/${existingBookId}`)
+      .patch(`/books/${existingBookId}`)
       .send({});
     expect(response.status).toBe(400);
   });
 
   it("explains an empty update in formErrors", async () => {
     const response = await request(app)
-      .put(`/books/${existingBookId}`)
+      .patch(`/books/${existingBookId}`)
       .send({});
     expect(response.body.details.formErrors).toContain(
       "At least one field is required",
@@ -263,9 +263,28 @@ describe("book failure cases", () => {
     expect(response.status).toBe(400);
   });
 
+  it("clears the cover image url when sent as null", async () => {
+    await request(app)
+      .patch(`/books/${existingBookId}`)
+      .send({ coverImageUrl: "https://example.com/cover.jpg" });
+    const response = await request(app)
+      .patch(`/books/${existingBookId}`)
+      .send({ coverImageUrl: null });
+    expect(response.status).toBe(200);
+    expect(response.body.coverImageUrl).toBeNull();
+    expect(response.body.title).toBe("Frankenstein");
+  });
+
+  it("returns 400 when a required field is sent as null", async () => {
+    const response = await request(app)
+      .patch(`/books/${existingBookId}`)
+      .send({ title: null });
+    expect(response.status).toBe(400);
+  });
+
   it("returns 400 when the cover image url is not http or https", async () => {
     const response = await request(app)
-      .put(`/books/${existingBookId}`)
+      .patch(`/books/${existingBookId}`)
       .send({ coverImageUrl: "javascript:alert(1)" });
     expect(response.status).toBe(400);
     expect(response.body.details.fieldErrors.coverImageUrl).toBeDefined();
@@ -273,7 +292,7 @@ describe("book failure cases", () => {
 
   it("returns 404 when updating a book that does not exist", async () => {
     const response = await request(app)
-      .put(`/books/${missingBookId}`)
+      .patch(`/books/${missingBookId}`)
       .send({ readStatus: "read" });
     expect(response.status).toBe(404);
   });
@@ -330,7 +349,7 @@ describe("read status and genre", () => {
     await createBook({ genre: "Zzedit Genre" });
     const created = await createBook({ genre: "Placeholder" });
     const response = await request(app)
-      .put(`/books/${created.body.id}`)
+      .patch(`/books/${created.body.id}`)
       .send({ genre: "ZZEDIT GENRE" });
     expect(response.body.genre).toBe("Zzedit Genre");
   });
@@ -338,7 +357,7 @@ describe("read status and genre", () => {
   it("lets a book fix the capitalization of its own genre", async () => {
     const created = await createBook({ genre: "zzfix genre" });
     const response = await request(app)
-      .put(`/books/${created.body.id}`)
+      .patch(`/books/${created.body.id}`)
       .send({ genre: "Zzfix Genre" });
     expect(response.body.genre).toBe("Zzfix Genre");
   });
