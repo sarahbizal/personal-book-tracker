@@ -1,0 +1,139 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.books",
+    "label": "Create table \"books\"",
+    "summary": "Creates table \"books\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "books"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"books\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"books\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"books\"",
+        "sql": "CREATE TABLE \"public\".\"books\" (\n  \"author\" text NOT NULL,\n  \"cover_image_url\" text,\n  \"genre\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"read_status\" text DEFAULT 'want to read' NOT NULL,\n  \"title\" text NOT NULL,\n  CONSTRAINT \"books_pkey\" PRIMARY KEY (\"id\"),\n  CONSTRAINT \"books_read_status_check\" CHECK ((read_status = ANY (ARRAY['want to read'::text, 'reading'::text, 'read'::text])))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"books\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"books\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ratings",
+    "label": "Create table \"ratings\"",
+    "summary": "Creates table \"ratings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ratings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ratings\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ratings\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ratings\"",
+        "sql": "CREATE TABLE \"public\".\"ratings\" (\n  \"book_id\" int4 NOT NULL,\n  \"book_review_text\" text,\n  \"date_finished\" date,\n  \"id\" SERIAL NOT NULL,\n  \"rating\" int4,\n  CONSTRAINT \"ratings_pkey\" PRIMARY KEY (\"id\"),\n  CONSTRAINT \"ratings_rating_check\" CHECK (((rating >= 1) AND (rating <= 5)))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ratings\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ratings\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ratings.ratings_book_id_fkey",
+    "label": "Add foreign key \"ratings_book_id_fkey\" on \"ratings\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ratings_book_id_fkey",
+        "table": "ratings"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ratings_book_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ratings_book_id_fkey",
+          "public",
+          "\"public\".\"ratings\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ratings_book_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ratings\"\nADD CONSTRAINT \"ratings_book_id_fkey\"\nFOREIGN KEY (\"book_id\")\nREFERENCES \"public\".\"books\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ratings_book_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ratings_book_id_fkey",
+          "public",
+          "\"public\".\"ratings\""
+        ]
+      }
+    ]
+  }
+]

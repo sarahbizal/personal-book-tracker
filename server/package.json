@@ -7,7 +7,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "contract:emit": "prisma contract emit"
+    "contract:emit": "prisma contract emit",
+    "db:migrate": "prisma db migrate --advance-ref db",
+    "db:migrate:test": "DOTENV_CONFIG_PATH=.env.test DOTENV_CONFIG_OVERRIDE=true prisma db migrate",
+    "db:status": "prisma migration status",
+    "db:status:test": "DOTENV_CONFIG_PATH=.env.test DOTENV_CONFIG_OVERRIDE=true prisma migration status"
   },
   "repository": {
     "type": "git",
