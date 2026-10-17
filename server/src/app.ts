@@ -30,12 +30,13 @@ const idParam = z.coerce.number().pipe(dbId);
 const httpUrl = z.url({ protocol: /^https?$/ });
 
 const requiredText = z.string().trim().min(1);
+const readStatus = z.enum(["want to read", "reading", "read"]);
 
 const bookCreateSchema = z.object({
   title: requiredText,
   author: requiredText,
   genre: requiredText,
-  readStatus: requiredText.exactOptional(),
+  readStatus: readStatus.exactOptional(),
   coverImageUrl: httpUrl.exactOptional(),
 });
 
@@ -44,7 +45,7 @@ const bookUpdateSchema = z
     title: requiredText.exactOptional(),
     author: requiredText.exactOptional(),
     genre: requiredText.exactOptional(),
-    readStatus: requiredText.exactOptional(),
+    readStatus: readStatus.exactOptional(),
     coverImageUrl: httpUrl.exactOptional(),
   })
   .refine((body) => Object.keys(body).length > 0, {
@@ -69,6 +70,25 @@ function sendValidationError(res: Response, error: z.ZodError) {
     error: z.prettifyError(error),
     details: z.flattenError(error),
   });
+}
+
+//ILIKE treats % and _ as wildcards, so escape them to match them literally
+function escapeLike(text: string) {
+  return text.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+//Reuse an existing genre's spelling so "fantasy" and "Fantasy" stay one genre.
+//The first spelling saved wins. When editing, skip the book itself so its
+//own genre's capitalization can still be fixed.
+async function matchExistingGenre(genre: string, excludeBookId?: number) {
+  let query = db.orm.public.Books.where((book) =>
+    book.genre.ilike(escapeLike(genre)),
+  );
+  if (excludeBookId !== undefined) {
+    query = query.where((book) => book.id.neq(excludeBookId));
+  }
+  const existing = await query.first();
+  return existing?.genre ?? genre;
 }
 
 function sendInvalidId(res: Response) {
@@ -96,12 +116,20 @@ app.get("/books", async (req: Request, res: Response) => {
   let books;
   if (title) {
     books = await db.orm.public.Books.where((book) =>
-      book.title.ilike(`%${title}%`),
+      book.title.ilike(`%${escapeLike(String(title))}%`),
     ).all();
   } else {
     books = await db.orm.public.Books.all();
   }
   res.json(books);
+});
+
+app.get("/genres", async (req: Request, res: Response) => {
+  const rows = await db.orm.public.Books.select("genre")
+    .distinct("genre")
+    .orderBy((book) => book.genre.asc())
+    .all();
+  res.json(rows.map((row) => row.genre));
 });
 
 app.post("/books", async (req: Request, res: Response) => {
@@ -111,7 +139,10 @@ app.post("/books", async (req: Request, res: Response) => {
     return;
   }
 
-  const newBook = await db.orm.public.Books.create(body.data);
+  const newBook = await db.orm.public.Books.create({
+    ...body.data,
+    genre: await matchExistingGenre(body.data.genre),
+  });
   res.status(201).json(newBook);
 });
 
@@ -148,8 +179,14 @@ app.put("/books/:id", async (req: Request, res: Response) => {
     return;
   }
 
+  const changes = body.data.genre
+    ? {
+        ...body.data,
+        genre: await matchExistingGenre(body.data.genre, id.data),
+      }
+    : body.data;
   const editBook = await db.orm.public.Books.where({ id: id.data }).update(
-    body.data,
+    changes,
   );
   if (!editBook) {
     res.status(404).json({ error: `Book ${id.data} not found` });

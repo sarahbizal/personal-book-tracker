@@ -3,10 +3,11 @@ CREATE TABLE books (
     title TEXT NOT NULL,
     author TEXT NOT NULL,
     genre TEXT NOT NULL,
-    read_status TEXT NOT NULL DEFAULT 'want to read',
+    read_status TEXT NOT NULL DEFAULT 'want to read' CHECK (read_status IN ('want to read', 'reading', 'read')),
     cover_image_url TEXT
 );
 
+-- A book can have many ratings, one per read
 CREATE TABLE ratings (
     id SERIAL PRIMARY KEY,
     book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,

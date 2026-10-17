@@ -9,7 +9,7 @@ const meta: Meta<typeof BookCard> = {
     title: "Title",
     author: "Author",
     genre: "Genre",
-    readStatus: "Read Status",
+    readStatus: "reading",
   },
 };
 export default meta;
