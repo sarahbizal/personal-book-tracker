@@ -143,3 +143,74 @@ describe("DELETE /ratings/:id", () => {
     expect(stillExists).toBe(false);
   });
 });
+
+describe("rating failure cases", () => {
+  const missingId = 999999;
+
+  it("returns 201 when a rating is created", async () => {
+    const response = await request(app)
+      .post("/ratings")
+      .send({ bookId: existingBookId, rating: 5 });
+    expect(response.status).toBe(201);
+    await request(app).delete(`/ratings/${response.body.id}`);
+  });
+
+  it("returns 400 when the rating is out of range", async () => {
+    const response = await request(app)
+      .post("/ratings")
+      .send({ bookId: existingBookId, rating: 47 });
+    expect(response.status).toBe(400);
+    expect(response.body.details.fieldErrors.rating).toBeDefined();
+  });
+
+  it("returns 400 when the book does not exist", async () => {
+    const response = await request(app)
+      .post("/ratings")
+      .send({ bookId: missingId, rating: 5 });
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain(`${missingId}`);
+  });
+
+  it("returns 400 when the date is not a real date", async () => {
+    const response = await request(app)
+      .post("/ratings")
+      .send({ bookId: existingBookId, rating: 5, dateFinished: "2026-02-30" });
+    expect(response.status).toBe(400);
+    expect(response.body.details.fieldErrors.dateFinished).toBeDefined();
+  });
+
+  it("returns 400 when the id is not a number", async () => {
+    const response = await request(app).delete("/ratings/abc");
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 when the only update is a null date", async () => {
+    const created = await request(app)
+      .post("/ratings")
+      .send({ bookId: existingBookId, rating: 3 });
+    const response = await request(app)
+      .put(`/ratings/${created.body.id}`)
+      .send({ dateFinished: null });
+    expect(response.status).toBe(400);
+    await request(app).delete(`/ratings/${created.body.id}`);
+  });
+
+  it("returns 400 when the book id is too large for the database", async () => {
+    const response = await request(app)
+      .post("/ratings")
+      .send({ bookId: 3000000000, rating: 5 });
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 404 when updating a rating that does not exist", async () => {
+    const response = await request(app)
+      .put(`/ratings/${missingId}`)
+      .send({ rating: 3 });
+    expect(response.status).toBe(404);
+  });
+
+  it("returns 404 when deleting a rating that does not exist", async () => {
+    const response = await request(app).delete(`/ratings/${missingId}`);
+    expect(response.status).toBe(404);
+  });
+});
