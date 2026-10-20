@@ -57,13 +57,19 @@ A container such as `SideBar` that holds several children declares the union of 
 ```tsx
 interface SideBarProps {
   genres: string[];
-  onSelectGenre: (genre: string) => void;
+  selectedGenre: string | null;
+  onSelectGenre: (genre: string | null) => void;
 }
 
-function SideBar({ genres, onSelectGenre }: SideBarProps) {
+function SideBar({ genres, selectedGenre, onSelectGenre }: SideBarProps) {
   return (
     <aside className="sidebar">
-      <GenreList items={genres} onSelectItem={onSelectGenre} />
+      <h2>Genres</h2>
+      <GenreList
+        items={genres}
+        selectedItem={selectedGenre}
+        onSelectItem={onSelectGenre}
+      />
     </aside>
   );
 }
