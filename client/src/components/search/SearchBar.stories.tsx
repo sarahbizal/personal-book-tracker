@@ -17,7 +17,9 @@ export const Primary: Story = {};
 export const SubmitSearch: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const input = canvas.getByRole("textbox", { name: "Search books by title" });
+    const input = canvas.getByRole("textbox", {
+      name: "Search books by title",
+    });
 
     await userEvent.type(input, "Moby Dick{enter}");
 
@@ -30,11 +32,46 @@ export const SubmitSearch: Story = {
 export const EmptySubmit: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const input = canvas.getByRole("textbox", { name: "Search books by title" });
+    const input = canvas.getByRole("textbox", {
+      name: "Search books by title",
+    });
 
     await userEvent.type(input, "{enter}");
 
     await expect(args.onSearch).toHaveBeenCalledTimes(1);
     await expect(args.onSearch).toHaveBeenCalledWith("");
+  },
+};
+
+export const ClickSubmit: Story = {
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const input = canvas.getByRole("textbox", {
+      name: "Search books by title",
+    });
+
+    await userEvent.type(input, "Moby Dick");
+    await userEvent.click(canvas.getByRole("button", { name: "Search" }));
+
+    await expect(args.onSearch).toHaveBeenCalledTimes(1);
+    await expect(args.onSearch).toHaveBeenCalledWith("Moby Dick");
+  },
+};
+
+// Surrounding spaces are trimmed, so a search of only spaces is sent as an empty search.
+export const TrimsWhitespace: Story = {
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const input = canvas.getByRole("textbox", {
+      name: "Search books by title",
+    });
+
+    await userEvent.type(input, "   {enter}");
+    await userEvent.clear(input);
+    await userEvent.type(input, "  Moby Dick  {enter}");
+
+    await expect(args.onSearch).toHaveBeenCalledTimes(2);
+    await expect(args.onSearch).toHaveBeenNthCalledWith(1, "");
+    await expect(args.onSearch).toHaveBeenNthCalledWith(2, "Moby Dick");
   },
 };
