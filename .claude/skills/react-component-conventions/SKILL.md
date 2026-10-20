@@ -25,7 +25,7 @@ Follow these rules for every component in `client/src/components` and `client/sr
 
    Any component whose body is just `{}` (e.g. `function CurrentlyReading() {}`) is an empty placeholder. It returns nothing and can't be rendered as JSX, so don't copy it as a pattern. When you start one of them, make it return JSX first, even if that's just a placeholder `<div>`.
 
-8. **Clickable elements are buttons.** Anything the user clicks to act on gets a `<button type="button">` (or a link for navigation), not `onClick` on an `<li>` or `<div>`, so it works with the keyboard. For a toggle or selection, add `aria-pressed`. See `GenreItem.tsx`, which wraps a `<button>` in its `<li>`.
+8. **Clickable elements are buttons.** Anything the user clicks to act on gets a `<button type="button">` (or a link for navigation), not `onClick` on an `<li>` or `<div>`, so it works with the keyboard. For a toggle or selection, add `aria-pressed`. See `GenreItem.tsx`, which wraps a `<button>` in its `<li>`. A button that submits a form is the exception: it uses `type="submit"` so clicking it and pressing Enter go through the same `onSubmit`. See `SearchBar.tsx`.
 
 ## Template
 
