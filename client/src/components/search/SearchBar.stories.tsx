@@ -14,6 +14,14 @@ type Story = StoryObj<typeof SearchBar>;
 
 export const Primary: Story = {};
 
+export const SearchLandmark: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByRole("search")).toBeInTheDocument();
+  },
+};
+
 export const SubmitSearch: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);

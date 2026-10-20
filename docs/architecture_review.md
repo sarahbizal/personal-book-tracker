@@ -23,8 +23,8 @@ Work through these in order. Each one is a self-contained chunk.
 Later (no pressure):
 - [ ] Split routes into `express.Router()` files
 - [ ] Add `created_at` (and eventually `date_started`) columns
-- [ ] Fix the hard-coded Docker healthcheck username
-- [ ] Fix `docker-compose.yml` so a fresh volume gets the user and password from `server/.env`
+- [x] Fix the hard-coded Docker healthcheck username
+- [x] Fix `docker-compose.yml` so a fresh volume gets the user and password from `server/.env`
 
 ## What's solid
 
@@ -152,13 +152,17 @@ These are cheap to add and they power "recently added" sorting. The reading-pace
 
 The healthcheck hard-codes `-U booktracker -d booktracker`, but `POSTGRES_USER` defaults to `postgres`. Use the same variables in both places.
 
+*Status:* Fixed on 2026-10-20. The healthcheck now uses `$${POSTGRES_USER}` and `$${POSTGRES_DB}`.
+
 ### 12. [Later, small] A fresh Docker volume gets the wrong Postgres user and an empty password
 
 *Where:* `docker-compose.yml`
 
 *Why it matters:* the `environment:` block fills in `POSTGRES_USER` and `POSTGRES_PASSWORD` from the shell or a repo-root `.env`, not from `env_file: ./server/.env`, and there's no root `.env`. Those values win over `env_file`, so `docker compose config` shows `POSTGRES_USER: postgres` and an empty `POSTGRES_PASSWORD`. Postgres only reads these on the first start of an empty volume. The existing `book-tracker-data` volume isn't affected, but a fresh one (a new machine, or `docker compose down -v`) won't start. Since the migrations work, `docs/spin_up_steps.md` relies on a fresh volume coming up correctly, so this matters for anyone setting the project up from scratch.
 
-*What to do:* remove the `environment:` block so `env_file` supplies the values (or start compose with `--env-file server/.env`). Fix it together with #11, then test it with a throwaway compose project on a different port and leave the real volume alone. Until then, don't run `docker compose down -v`.
+*What to do:* remove the `environment:` block so `env_file` supplies the values (or start compose with `--env-file server/.env`). Fix it together with #11, then test it with a throwaway compose project on a different port and leave the real volume alone.
+
+*Status:* Fixed on 2026-10-20. The `environment:` block is gone. A throwaway project on port 55432 with a fresh volume came up healthy, created `booktracker` and `booktracker_test` as the `booktracker` user, and accepted only the password in `server/.env`.
 
 ## Questions to think about
 

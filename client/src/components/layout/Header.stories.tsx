@@ -28,7 +28,9 @@ export const Primary: Story = {
 export const SubmitSearch: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const input = canvas.getByRole("textbox", { name: "Search books by title" });
+    const input = canvas.getByRole("textbox", {
+      name: "Search books by title",
+    });
 
     await userEvent.type(input, "Moby Dick{enter}");
 
