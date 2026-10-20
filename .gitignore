@@ -5,6 +5,9 @@ node_modules/
 .env
 .env.local
 
+# Pre-deploy security records (lists known weaknesses, keep out of the public repo)
+deployment_documentation/
+
 # Build output
 dist/
 build/

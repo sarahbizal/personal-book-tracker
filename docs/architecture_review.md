@@ -31,7 +31,7 @@ Later (no pressure):
 - **The test database safety guard** (`server/tests/setup.ts`). It refuses to run tests against anything except a `*_test` database. Plenty of working developers have wiped a real database by skipping this.
 - **Splitting `app.ts` from `index.ts`.** This lets supertest load the app without starting a server. It's the standard pattern.
 - **Letting the database enforce rules.** The rating has to be between 1 and 5, and deleting a book also deletes its ratings. The second one was learned from a real bug, and that tends to stick.
-- **Secrets are handled correctly.** `.env` and `.env.test` are ignored by git and were never committed. The example files sit next to them.
+- **Secrets are handled correctly.** `.env` and `.env.test` are ignored by git and were never committed. The example files sit next to them. One exception: an early commit (`d22e8f9`) hardcoded the dev database password in `docker-compose.yml`. That password was rotated on 2026-10-20 and no longer works.
 - **Clear scope.** The README has an MVP section with mockups and a separate post-MVP list.
 - **Frontend habits.** Shared `Book` type, a conventions skill, clickable things are `<button>`s, the search input has an `aria-label`, and Storybook is set up. All of this is what a frontend team would expect.
 - **Git workflow.** Small PRs and commit messages that say what changed.
