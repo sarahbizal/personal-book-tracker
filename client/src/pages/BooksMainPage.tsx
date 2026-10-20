@@ -2,13 +2,15 @@ import type { Book } from "../types/book";
 import BookGrid from "../components/books/BookGrid";
 import { useEffect, useState } from "react";
 import Header from "../components/layout/Header";
-import SideBar from "../components/layout/Sidebar";
+import SideBar from "../components/layout/SideBar";
 import { fetchJson } from "../api";
 
 //Directly renders components for now. Eventually will be swapped out for wrapper component and the props will pass through them.
 function BooksMainPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
+  //null means no genre is selected, so all books show. Not used for filtering yet: /books only supports ?title=
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   //A new object on every search, so searching the same title again still refetches
   const [search, setSearch] = useState({ title: "" });
   const [isLoading, setIsLoading] = useState(true);
@@ -66,8 +68,8 @@ function BooksMainPage() {
     };
   }, []);
 
-  const handleSelectGenre = (genre: string) => {
-    console.log(genre);
+  const handleSelectGenre = (genre: string | null) => {
+    setSelectedGenre(genre);
   };
 
   const handleSearch = (title: string) => {
@@ -91,7 +93,11 @@ function BooksMainPage() {
   return (
     <div>
       <Header onSearch={handleSearch} />
-      <SideBar genres={genres} onSelectGenre={handleSelectGenre} />
+      <SideBar
+        genres={genres}
+        selectedGenre={selectedGenre}
+        onSelectGenre={handleSelectGenre}
+      />
       {error && <p role="alert">{error}</p>}
       {content}
     </div>
