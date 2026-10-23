@@ -12,10 +12,10 @@
 
 Work through these in order. Each one is a self-contained chunk.
 
-- [ ] 1. API validation, status codes, and error handling (+ tests for failure cases)
-- [ ] 2. Settle the schema: read status and genre constraints, one-or-many ratings decision
-- [ ] 3. Switch update routes to PATCH and fix the `null` date case
-- [ ] 4. Move the API URL and CORS origin into env vars; load all books on page open; add loading/error states
+- [x] 1. API validation, status codes, and error handling (+ tests for failure cases)
+- [x] 2. Settle the schema: read status and genre constraints, one-or-many ratings decision
+- [x] 3. Switch update routes to PATCH and fix the `null` date case
+- [x] 4. Move the API URL and CORS origin into env vars; load all books on page open; add loading/error states
 - [x] 5. Set up migrations
 - [ ] 6. Pick the AWS target and deploy a "hello world" version early in week 4
 - [ ] 7. Pin the `"latest"` dependency versions in the client
