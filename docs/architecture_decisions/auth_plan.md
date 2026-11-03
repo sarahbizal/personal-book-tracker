@@ -62,7 +62,7 @@ Cookies are easiest when the client and API share one site. I'll decide the deta
 
 ## Build order
 
-- [ ] 1. Add the `sessions` table with a Prisma Next migration
+- [x] 1. Add the `sessions` table with a Prisma Next migration
 - [ ] 2. Add the hash-password script and `ADMIN_PASSWORD_HASH` to `.env.example`
 - [ ] 3. Add `/auth/login`, `/auth/logout`, and `/auth/me` with tests
 - [ ] 4. Add `loadSession`, `requireAdmin`, and the `Origin` check, then put them on the write routes with tests for `403`

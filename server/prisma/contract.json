@@ -11,6 +11,10 @@
     "ratings": {
       "model": "Ratings",
       "namespace": "public"
+    },
+    "sessions": {
+      "model": "Sessions",
+      "namespace": "public"
     }
   },
   "domain": {
@@ -181,6 +185,57 @@
               "namespaceId": "public",
               "table": "ratings"
             }
+          },
+          "Sessions": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "expiresAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "tokenHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "expiresAt": {
+                  "column": "expires_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "tokenHash": {
+                  "column": "token_hash"
+                }
+              },
+              "namespaceId": "public",
+              "table": "sessions"
+            }
           }
         }
       }
@@ -314,6 +369,53 @@
                 "name": "ratings_pkey"
               },
               "uniques": []
+            },
+            "sessions": {
+              "columns": {
+                "created_at": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "expires_at": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "token_hash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ],
+                "name": "sessions_pkey"
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "token_hash"
+                  ]
+                }
+              ]
             }
           }
         },
@@ -321,7 +423,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "f8a7a006f2d6b74d09976e63b94ba54ba99a5c77c4863db111e09d0904741788"
+    "storageHash": "e38cb7bc8f8faf96bfebfb9669f5ae73fcb2dae953246d4d76e436b6b660cc47"
   },
   "capabilities": {
     "postgres": {
