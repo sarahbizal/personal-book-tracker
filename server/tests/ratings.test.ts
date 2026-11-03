@@ -14,16 +14,16 @@ beforeAll(async () => {
       "https://en.wikipedia.org/wiki/File:Moby-Dick_FE_title_page.jpg",
   };
 
-  const books = await request(app).get("/books");
+  const books = await request(app).get("/api/v1/books");
   expect(Array.isArray(books.body)).toBe(true);
 
-  const createdBook = await request(app).post("/books").send(createData);
+  const createdBook = await request(app).post("/api/v1/books").send(createData);
   existingBookId = createdBook.body.id;
 });
 
 describe("GET /ratings", () => {
   it("returns an array", async () => {
-    const ratings = await request(app).get("/ratings");
+    const ratings = await request(app).get("/api/v1/ratings");
     expect(Array.isArray(ratings.body)).toBe(true);
   });
 });
@@ -32,13 +32,13 @@ describe("POST /ratings", () => {
   let createdRatingId: number | undefined;
 
   beforeAll(async () => {
-    const ratings = await request(app).get("/ratings");
+    const ratings = await request(app).get("/api/v1/ratings");
     expect(Array.isArray(ratings.body)).toBe(true);
   });
 
   afterAll(async () => {
     if (createdRatingId) {
-      await request(app).delete(`/ratings/${createdRatingId}`);
+      await request(app).delete(`/api/v1/ratings/${createdRatingId}`);
     }
   });
 
@@ -49,7 +49,7 @@ describe("POST /ratings", () => {
       bookReviewText: "Wow what a classic",
       dateFinished: "2002-01-01",
     };
-    const rating = await request(app).post("/ratings").send(data);
+    const rating = await request(app).post("/api/v1/ratings").send(data);
     expect(rating).toBeTruthy();
     expect(rating.body.rating).toBe(data.rating);
     expect(rating.body.bookReviewText).toBe(data.bookReviewText);
@@ -62,7 +62,7 @@ describe("PATCH /ratings/:id", () => {
   let createData: any;
 
   beforeAll(async () => {
-    const ratings = await request(app).get("/ratings");
+    const ratings = await request(app).get("/api/v1/ratings");
     expect(Array.isArray(ratings.body)).toBe(true);
 
     createData = {
@@ -72,13 +72,13 @@ describe("PATCH /ratings/:id", () => {
       dateFinished: "2002-01-01",
     };
 
-    const createdRating = await request(app).post("/ratings").send(createData);
+    const createdRating = await request(app).post("/api/v1/ratings").send(createData);
     createdRatingId = createdRating.body.id;
   });
 
   afterAll(async () => {
     if (createdRatingId) {
-      await request(app).delete(`/ratings/${createdRatingId}`);
+      await request(app).delete(`/api/v1/ratings/${createdRatingId}`);
     }
   });
 
@@ -88,7 +88,7 @@ describe("PATCH /ratings/:id", () => {
     };
 
     const modifiedRating = await request(app)
-      .patch(`/ratings/${createdRatingId}`)
+      .patch(`/api/v1/ratings/${createdRatingId}`)
       .send(updateData);
     expect(modifiedRating).toBeTruthy();
     expect(modifiedRating.body.bookReviewText).toBe(updateData.bookReviewText);
@@ -103,7 +103,7 @@ describe("PATCH /ratings/:id", () => {
     };
 
     const modifiedRating = await request(app)
-      .patch(`/ratings/${createdRatingId}`)
+      .patch(`/api/v1/ratings/${createdRatingId}`)
       .send(updateData);
     expect(modifiedRating).toBeTruthy();
     expect(modifiedRating.body.rating).toBe(updateData.rating);
@@ -122,20 +122,20 @@ describe("DELETE /ratings/:id", () => {
   };
 
   beforeAll(async () => {
-    const ratings = await request(app).get("/ratings");
+    const ratings = await request(app).get("/api/v1/ratings");
     expect(Array.isArray(ratings.body)).toBe(true);
 
-    const createdRatings = await request(app).post("/ratings").send(createData);
+    const createdRatings = await request(app).post("/api/v1/ratings").send(createData);
     createdRatingId = createdRatings.body.id;
   });
 
   it("deletes full rating for individual book", async () => {
     const deleteRating = await request(app).delete(
-      `/ratings/${createdRatingId}`,
+      `/api/v1/ratings/${createdRatingId}`,
     );
     expect(deleteRating).toBeTruthy();
 
-    const checkRatings = await request(app).get("/ratings");
+    const checkRatings = await request(app).get("/api/v1/ratings");
     const stillExists = checkRatings.body.some(
       (rating: any) => rating.id === createdRatingId,
     );
@@ -148,15 +148,15 @@ describe("rating failure cases", () => {
 
   it("returns 201 when a rating is created", async () => {
     const response = await request(app)
-      .post("/ratings")
+      .post("/api/v1/ratings")
       .send({ bookId: existingBookId, rating: 5 });
     expect(response.status).toBe(201);
-    await request(app).delete(`/ratings/${response.body.id}`);
+    await request(app).delete(`/api/v1/ratings/${response.body.id}`);
   });
 
   it("returns 400 when the rating is out of range", async () => {
     const response = await request(app)
-      .post("/ratings")
+      .post("/api/v1/ratings")
       .send({ bookId: existingBookId, rating: 47 });
     expect(response.status).toBe(400);
     expect(response.body.details.fieldErrors.rating).toBeDefined();
@@ -164,7 +164,7 @@ describe("rating failure cases", () => {
 
   it("returns 400 when the book does not exist", async () => {
     const response = await request(app)
-      .post("/ratings")
+      .post("/api/v1/ratings")
       .send({ bookId: missingId, rating: 5 });
     expect(response.status).toBe(400);
     expect(response.body.error).toContain(`${missingId}`);
@@ -172,80 +172,80 @@ describe("rating failure cases", () => {
 
   it("returns 400 when the date is not a real date", async () => {
     const response = await request(app)
-      .post("/ratings")
+      .post("/api/v1/ratings")
       .send({ bookId: existingBookId, rating: 5, dateFinished: "2026-02-30" });
     expect(response.status).toBe(400);
     expect(response.body.details.fieldErrors.dateFinished).toBeDefined();
   });
 
   it("returns 400 when the id is not a number", async () => {
-    const response = await request(app).delete("/ratings/abc");
+    const response = await request(app).delete("/api/v1/ratings/abc");
     expect(response.status).toBe(400);
   });
 
   it("clears the date when dateFinished is sent as null", async () => {
     const created = await request(app)
-      .post("/ratings")
+      .post("/api/v1/ratings")
       .send({ bookId: existingBookId, rating: 3, dateFinished: "2026-01-15" });
     const response = await request(app)
-      .patch(`/ratings/${created.body.id}`)
+      .patch(`/api/v1/ratings/${created.body.id}`)
       .send({ dateFinished: null });
     expect(response.status).toBe(200);
     expect(response.body.dateFinished).toBeNull();
     expect(response.body.rating).toBe(3);
-    await request(app).delete(`/ratings/${created.body.id}`);
+    await request(app).delete(`/api/v1/ratings/${created.body.id}`);
   });
 
   it("clears the rating and review when sent as null", async () => {
-    const created = await request(app).post("/ratings").send({
+    const created = await request(app).post("/api/v1/ratings").send({
       bookId: existingBookId,
       rating: 4,
       bookReviewText: "Loved it",
       dateFinished: "2026-01-15",
     });
     const response = await request(app)
-      .patch(`/ratings/${created.body.id}`)
+      .patch(`/api/v1/ratings/${created.body.id}`)
       .send({ rating: null, bookReviewText: null });
     expect(response.status).toBe(200);
     expect(response.body.rating).toBeNull();
     expect(response.body.bookReviewText).toBeNull();
     expect(response.body.dateFinished).toBe("2026-01-15");
-    await request(app).delete(`/ratings/${created.body.id}`);
+    await request(app).delete(`/api/v1/ratings/${created.body.id}`);
   });
 
   it("no longer accepts PUT for updates", async () => {
     const created = await request(app)
-      .post("/ratings")
+      .post("/api/v1/ratings")
       .send({ bookId: existingBookId, rating: 3 });
     const response = await request(app)
-      .put(`/ratings/${created.body.id}`)
+      .put(`/api/v1/ratings/${created.body.id}`)
       .send({ rating: 1 });
     expect(response.status).toBe(404);
 
-    const ratings = await request(app).get("/ratings");
+    const ratings = await request(app).get("/api/v1/ratings");
     const unchanged = ratings.body.find(
       (rating: any) => rating.id === created.body.id,
     );
     expect(unchanged.rating).toBe(3);
-    await request(app).delete(`/ratings/${created.body.id}`);
+    await request(app).delete(`/api/v1/ratings/${created.body.id}`);
   });
 
   it("returns 400 when the book id is too large for the database", async () => {
     const response = await request(app)
-      .post("/ratings")
+      .post("/api/v1/ratings")
       .send({ bookId: 3000000000, rating: 5 });
     expect(response.status).toBe(400);
   });
 
   it("returns 404 when updating a rating that does not exist", async () => {
     const response = await request(app)
-      .patch(`/ratings/${missingId}`)
+      .patch(`/api/v1/ratings/${missingId}`)
       .send({ rating: 3 });
     expect(response.status).toBe(404);
   });
 
   it("returns 404 when deleting a rating that does not exist", async () => {
-    const response = await request(app).delete(`/ratings/${missingId}`);
+    const response = await request(app).delete(`/api/v1/ratings/${missingId}`);
     expect(response.status).toBe(404);
   });
 });

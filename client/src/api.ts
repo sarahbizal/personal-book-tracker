@@ -1,5 +1,8 @@
-//Baked in at build time from client/.env. A trailing slash would make URLs like //books
+//Baked in at build time from client/.env. A trailing slash would make URLs like //api/v1/books
 const API_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, "");
+
+//The version lives in code, not the env var, because this code is written against v1's response shapes
+const API_VERSION_PREFIX = "/api/v1";
 
 //Fetches JSON from the API and throws a readable error when the request fails
 export async function fetchJson<T>(path: string): Promise<T> {
@@ -9,7 +12,7 @@ export async function fetchJson<T>(path: string): Promise<T> {
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`);
+    response = await fetch(`${API_URL}${API_VERSION_PREFIX}${path}`);
   } catch {
     throw new Error("Couldn't reach the server. Is it running?");
   }

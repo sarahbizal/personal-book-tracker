@@ -27,10 +27,13 @@ app.use(
 );
 app.use(express.json());
 
-//Test database connection
+//Must come after the body parser and CORS so /api/v1 requests get both.
+//Router middleware (like auth guards) must be registered before the routes it protects
+const api = express.Router();
+app.use("/api/v1", api);
+
 await db.connect({ url: process.env.DATABASE_URL! });
 
-//Request validation schemas
 //Postgres INTEGER columns top out at 2147483647
 const dbId = z.number().int().positive().max(2_147_483_647);
 const idParam = z.coerce.number().pipe(dbId);
@@ -106,7 +109,7 @@ app.get("/health", (req: Request, res: Response) => {
   res.json({ status: "ok" });
 });
 
-app.get("/ratings", async (req: Request, res: Response) => {
+api.get("/ratings", async (req: Request, res: Response) => {
   const ratings = await db.orm.public.Ratings.select(
     "id",
     "bookId",
@@ -117,7 +120,7 @@ app.get("/ratings", async (req: Request, res: Response) => {
   res.json(ratings);
 });
 
-app.get("/books", async (req: Request, res: Response) => {
+api.get("/books", async (req: Request, res: Response) => {
   const title = req.query.title;
 
   let books;
@@ -131,7 +134,7 @@ app.get("/books", async (req: Request, res: Response) => {
   res.json(books);
 });
 
-app.get("/genres", async (req: Request, res: Response) => {
+api.get("/genres", async (req: Request, res: Response) => {
   const rows = await db.orm.public.Books.select("genre")
     .distinct("genre")
     .orderBy((book) => book.genre.asc())
@@ -139,7 +142,7 @@ app.get("/genres", async (req: Request, res: Response) => {
   res.json(rows.map((row) => row.genre));
 });
 
-app.post("/books", async (req: Request, res: Response) => {
+api.post("/books", async (req: Request, res: Response) => {
   const body = bookCreateSchema.safeParse(req.body);
   if (!body.success) {
     sendValidationError(res, body.error);
@@ -153,7 +156,7 @@ app.post("/books", async (req: Request, res: Response) => {
   res.status(201).json(newBook);
 });
 
-app.post("/ratings", async (req: Request, res: Response) => {
+api.post("/ratings", async (req: Request, res: Response) => {
   const body = ratingCreateSchema.safeParse(req.body);
   if (!body.success) {
     sendValidationError(res, body.error);
@@ -174,7 +177,7 @@ app.post("/ratings", async (req: Request, res: Response) => {
   res.status(201).json(newRating);
 });
 
-app.patch("/books/:id", async (req: Request, res: Response) => {
+api.patch("/books/:id", async (req: Request, res: Response) => {
   const id = idParam.safeParse(req.params.id);
   if (!id.success) {
     sendInvalidId(res);
@@ -202,7 +205,7 @@ app.patch("/books/:id", async (req: Request, res: Response) => {
   res.json(editBook);
 });
 
-app.patch("/ratings/:id", async (req: Request, res: Response) => {
+api.patch("/ratings/:id", async (req: Request, res: Response) => {
   const id = idParam.safeParse(req.params.id);
   if (!id.success) {
     sendInvalidId(res);
@@ -238,7 +241,7 @@ app.patch("/ratings/:id", async (req: Request, res: Response) => {
   res.json(editRating);
 });
 
-app.delete("/books/:id", async (req: Request, res: Response) => {
+api.delete("/books/:id", async (req: Request, res: Response) => {
   const id = idParam.safeParse(req.params.id);
   if (!id.success) {
     sendInvalidId(res);
@@ -255,7 +258,7 @@ app.delete("/books/:id", async (req: Request, res: Response) => {
   res.json(deletedBook);
 });
 
-app.delete("/ratings/:id", async (req: Request, res: Response) => {
+api.delete("/ratings/:id", async (req: Request, res: Response) => {
   const id = idParam.safeParse(req.params.id);
   if (!id.success) {
     sendInvalidId(res);
@@ -270,6 +273,13 @@ app.delete("/ratings/:id", async (req: Request, res: Response) => {
     return;
   }
   res.json(deletedRating);
+});
+
+//Must stay below every api route so it only catches paths nothing else matched
+api.use((req: Request, res: Response) => {
+  res
+    .status(404)
+    .json({ error: `No route for ${req.method} ${req.originalUrl}` });
 });
 
 //Catch-all error handler. Must stay below every route.
