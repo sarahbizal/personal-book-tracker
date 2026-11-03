@@ -15,7 +15,7 @@ Work through these in order. Each one is a self-contained chunk.
 
 - [ ] 1. Add authentication before deploying
 - [ ] 2. Validate `?title=` with zod and add a `?genre=` filter
-- [ ] 3. Add an `/api/v1` prefix before any response shapes change
+- [x] 3. Add an `/api/v1` prefix before any response shapes change
 - [ ] 4. Guard POST routes against duplicates
 - [ ] 5. Add rate limiting before deploying
 
@@ -79,6 +79,8 @@ const bookListQuery = z.object({
 - Mount the routes on an `express.Router()` at `/api/v1` and update `VITE_API_URL` or `fetchJson` to match. This pairs well with splitting the routes into their own files (architecture review #9).
 - Leave `/health` unversioned.
 - A URL prefix is plenty here. Header-based versioning (`Accept: application/vnd.booktracker.v1+json`) keeps URLs cleaner, but it's harder to try out with curl or a browser.
+
+*Status:* Fixed on 2026-11-02 (#20). Books, ratings, and genres now live on a router at `/api/v1` and `/health` stays at the root. I put the prefix in `fetchJson` instead of `VITE_API_URL`. The env var says where the server lives and the prefix says which response shapes the client was written for, so a move to v2 changes in the same commit as the components that need it. Unknown `/api/v1/*` paths now return a JSON 404 like every other error.
 
 ### 4. [Should fix] POST routes aren't idempotent and can create duplicates
 

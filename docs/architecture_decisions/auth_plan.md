@@ -37,7 +37,7 @@ I'm the only admin and everyone else is a viewer. Viewers can browse everything 
 - **Password.** My password never sits in the repo or the env file. A small script (`npm run hash-password`) hashes it with Node's built-in `crypto.scrypt` and a random salt. I paste the result into `ADMIN_PASSWORD_HASH` in `server/.env`. Login checks the password with `crypto.timingSafeEqual` so response timing doesn't hint at how close a guess was. If I forget it, I run the script again and swap the env var.
 - **Sessions table.** A new `sessions` table goes through a Prisma Next migration like everything else. It has `id`, `token_hash`, `expires_at`, and `created_at`. The cookie holds a random 32-byte token and the table only stores its SHA-256 hash, so a leaked database dump can't be used to log in.
 - **Cookie.** Set with `HttpOnly`, `SameSite=Strict`, `Path=/`, and a 30 day `Max-Age`. In production it's also `Secure` and uses the `__Host-` name prefix, which tells the browser to only accept it over HTTPS from this exact host.
-- **Routes.**
+- **Routes.** These go in their own `auth.ts` router at `/api/v1/auth`, so the proxy and `fetchJson` treat them like every other route.
   - `POST /auth/login` checks the password, creates a session, and sets the cookie. A wrong password always gets the same error message.
   - `POST /auth/logout` deletes the session row and clears the cookie.
   - `GET /auth/me` returns `{ isAdmin: true | false }` so the client knows which buttons should work.
@@ -50,7 +50,7 @@ I'm the only admin and everyone else is a viewer. Viewers can browse everything 
 
 ### Client
 
-- **Same origin in dev.** A Vite proxy sends `/api/*` to `localhost:3000`. The browser sees one origin, which keeps the cookie first-party and means I don't need CORS credentials setup. The client's `VITE_API_URL` becomes `/api` in dev.
+- **Same origin in dev.** A Vite proxy sends `/api/*` to `localhost:3000`. The browser sees one origin, which keeps the cookie first-party and means I don't need CORS credentials setup. `fetchJson` already adds `/api/v1` (#20), so `VITE_API_URL` becomes an empty string in dev. The `if (!API_URL)` check in `api.ts` rejects an empty string right now, so I'll change it to only reject a missing value.
 - **Auth context.** An `AuthProvider` calls `/auth/me` on load and shares `isAdmin`, `login`, and `logout` through React context.
 - **Permission check.** A small `useAdminAction` hook wraps button handlers. If I'm not admin it shows the toast instead of running the action. `fetchJson` also shows the toast on any `403`, so a missed button still ends up in the right place.
 - **Login page.** A `/login` route with one password field and a submit button. After it works, it sends me back to the main page.
@@ -68,7 +68,7 @@ Cookies are easiest when the client and API share one site. I'll decide the deta
 - [ ] 4. Add `loadSession`, `requireAdmin`, and the `Origin` check, then put them on the write routes with tests for `403`
 - [ ] 5. Strip `bookReviewText` for viewers with a test for both roles
 - [ ] 6. Add rate limiting to login
-- [ ] 7. Add the Vite proxy and switch the client to `/api`
+- [ ] 7. Add the Vite proxy and set `VITE_API_URL` to an empty string in dev
 - [ ] 8. Add `sonner`, `AuthProvider`, and `useAdminAction`
 - [ ] 9. Build the login page and the header Log in and Log out buttons
 - [ ] 10. Hook `useAdminAction` into the buttons as they get built
