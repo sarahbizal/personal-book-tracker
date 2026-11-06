@@ -11,7 +11,8 @@
     "db:migrate": "prisma db migrate --advance-ref db",
     "db:migrate:test": "DOTENV_CONFIG_PATH=.env.test DOTENV_CONFIG_OVERRIDE=true prisma db migrate",
     "db:status": "prisma migration status",
-    "db:status:test": "DOTENV_CONFIG_PATH=.env.test DOTENV_CONFIG_OVERRIDE=true prisma migration status"
+    "db:status:test": "DOTENV_CONFIG_PATH=.env.test DOTENV_CONFIG_OVERRIDE=true prisma migration status",
+    "hash-password": "tsx scripts/hash-password.ts"
   },
   "repository": {
     "type": "git",
