@@ -1,6 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import request from "supertest";
-import { app } from "../src/app.js";
+import { loginAsAdmin, logoutAdmin, type AdminAgent } from "./helpers.js";
+
+let admin: AdminAgent;
+
+beforeAll(async () => {
+  admin = await loginAsAdmin();
+});
+
+afterAll(async () => {
+  await logoutAdmin(admin);
+});
 
 describe("GET /books", () => {
   let existingBookId: number | undefined;
@@ -11,23 +20,23 @@ describe("GET /books", () => {
   };
 
   beforeAll(async () => {
-    const createdBook = await request(app).post("/api/v1/books").send(createData);
+    const createdBook = await admin.post("/api/v1/books").send(createData);
     existingBookId = createdBook.body.id;
   });
 
   afterAll(async () => {
     if (existingBookId) {
-      await request(app).delete(`/api/v1/books/${existingBookId}`);
+      await admin.delete(`/api/v1/books/${existingBookId}`);
     }
   });
 
   it("returns an array", async () => {
-    const books = await request(app).get("/api/v1/books");
+    const books = await admin.get("/api/v1/books");
     expect(Array.isArray(books.body)).toBe(true);
   });
 
   it("returns matching books when searching by title", async () => {
-    const response = await request(app)
+    const response = await admin
       .get("/api/v1/books")
       .query({ title: "Gatsby" });
     const found = response.body.some((book: any) => book.id === existingBookId);
@@ -35,7 +44,7 @@ describe("GET /books", () => {
   });
 
   it("is case-insensitive", async () => {
-    const response = await request(app)
+    const response = await admin
       .get("/api/v1/books")
       .query({ title: "gatsby" });
     const found = response.body.some((book: any) => book.id === existingBookId);
@@ -43,14 +52,14 @@ describe("GET /books", () => {
   });
 
   it("returns an empty array when nothing matches", async () => {
-    const response = await request(app)
+    const response = await admin
       .get("/api/v1/books")
       .query({ title: "zzzznonsensexyz" });
     expect(response.body).toEqual([]);
   });
 
   it("returns all books when no search term is provided", async () => {
-    const response = await request(app).get("/api/v1/books");
+    const response = await admin.get("/api/v1/books");
     const found = response.body.some((book: any) => book.id === existingBookId);
     expect(found).toBe(true);
   });
@@ -60,13 +69,13 @@ describe("POST /books", () => {
   let createdBookId: number | undefined;
 
   beforeAll(async () => {
-    const books = await request(app).get("/api/v1/books");
+    const books = await admin.get("/api/v1/books");
     expect(Array.isArray(books.body)).toBe(true);
   });
 
   afterAll(async () => {
     if (createdBookId) {
-      await request(app).delete(`/api/v1/books/${createdBookId}`);
+      await admin.delete(`/api/v1/books/${createdBookId}`);
     }
   });
 
@@ -79,7 +88,7 @@ describe("POST /books", () => {
       coverImageUrl:
         "https://en.wikipedia.org/wiki/File:Moby-Dick_FE_title_page.jpg",
     };
-    const book = await request(app).post("/api/v1/books").send(data);
+    const book = await admin.post("/api/v1/books").send(data);
     expect(book).toBeTruthy();
     expect(book.body.title).toBe(data.title);
     expect(book.body.author).toBe(data.author);
@@ -101,16 +110,16 @@ describe("PATCH /books/:id", () => {
   };
 
   beforeAll(async () => {
-    const books = await request(app).get("/api/v1/books");
+    const books = await admin.get("/api/v1/books");
     expect(Array.isArray(books.body)).toBe(true);
 
-    const createdBook = await request(app).post("/api/v1/books").send(createData);
+    const createdBook = await admin.post("/api/v1/books").send(createData);
     existingBookId = createdBook.body.id;
   });
 
   afterAll(async () => {
     if (existingBookId) {
-      await request(app).delete(`/api/v1/books/${existingBookId}`);
+      await admin.delete(`/api/v1/books/${existingBookId}`);
     }
   });
 
@@ -119,7 +128,7 @@ describe("PATCH /books/:id", () => {
       readStatus: "read",
     };
 
-    const modifiedBook = await request(app)
+    const modifiedBook = await admin
       .patch(`/api/v1/books/${existingBookId}`)
       .send(updateData);
     expect(modifiedBook).toBeTruthy();
@@ -137,7 +146,7 @@ describe("PATCH /books/:id", () => {
         "https://en.wikipedia.org/wiki/File:Dracula-First-Edition-1897.jpg",
     };
 
-    const modifiedBook = await request(app)
+    const modifiedBook = await admin
       .patch(`/api/v1/books/${existingBookId}`)
       .send(updateData);
     expect(modifiedBook).toBeTruthy();
@@ -161,18 +170,18 @@ describe("DELETE /books/:id", () => {
   };
 
   beforeAll(async () => {
-    const books = await request(app).get("/api/v1/books");
+    const books = await admin.get("/api/v1/books");
     expect(Array.isArray(books.body)).toBe(true);
 
-    const createdBook = await request(app).post("/api/v1/books").send(createData);
+    const createdBook = await admin.post("/api/v1/books").send(createData);
     existingBookId = createdBook.body.id;
   });
 
   it("deletes individual books", async () => {
-    const deleteBook = await request(app).delete(`/api/v1/books/${existingBookId}`);
+    const deleteBook = await admin.delete(`/api/v1/books/${existingBookId}`);
     expect(deleteBook).toBeTruthy();
 
-    const checkBooks = await request(app).get("/api/v1/books");
+    const checkBooks = await admin.get("/api/v1/books");
     const stillExists = checkBooks.body.some(
       (book: any) => book.id === existingBookId,
     );
@@ -185,7 +194,7 @@ describe("book failure cases", () => {
   const missingBookId = 999999;
 
   beforeAll(async () => {
-    const createdBook = await request(app).post("/api/v1/books").send({
+    const createdBook = await admin.post("/api/v1/books").send({
       title: "Frankenstein",
       author: "Mary Shelley",
       genre: "Gothic Horror",
@@ -195,22 +204,22 @@ describe("book failure cases", () => {
 
   afterAll(async () => {
     if (existingBookId) {
-      await request(app).delete(`/api/v1/books/${existingBookId}`);
+      await admin.delete(`/api/v1/books/${existingBookId}`);
     }
   });
 
   it("returns 201 when a book is created", async () => {
-    const response = await request(app).post("/api/v1/books").send({
+    const response = await admin.post("/api/v1/books").send({
       title: "Emma",
       author: "Jane Austen",
       genre: "Classic",
     });
     expect(response.status).toBe(201);
-    await request(app).delete(`/api/v1/books/${response.body.id}`);
+    await admin.delete(`/api/v1/books/${response.body.id}`);
   });
 
   it("returns 400 when required fields are missing", async () => {
-    const response = await request(app)
+    const response = await admin
       .post("/api/v1/books")
       .send({ title: "No Author" });
     expect(response.status).toBe(400);
@@ -219,7 +228,7 @@ describe("book failure cases", () => {
   });
 
   it("returns 400 when a required field is blank", async () => {
-    const response = await request(app)
+    const response = await admin
       .post("/api/v1/books")
       .send({ title: "   ", author: "Someone", genre: "Fiction" });
     expect(response.status).toBe(400);
@@ -227,7 +236,7 @@ describe("book failure cases", () => {
   });
 
   it("returns 400 when the body is not valid JSON", async () => {
-    const response = await request(app)
+    const response = await admin
       .post("/api/v1/books")
       .set("Content-Type", "application/json")
       .send('{"title": "broken"');
@@ -236,21 +245,21 @@ describe("book failure cases", () => {
   });
 
   it("returns 400 when the id is not a number", async () => {
-    const response = await request(app)
+    const response = await admin
       .patch("/api/v1/books/abc")
       .send({ readStatus: "read" });
     expect(response.status).toBe(400);
   });
 
   it("returns 400 when an update has no fields", async () => {
-    const response = await request(app)
+    const response = await admin
       .patch(`/api/v1/books/${existingBookId}`)
       .send({});
     expect(response.status).toBe(400);
   });
 
   it("explains an empty update in formErrors", async () => {
-    const response = await request(app)
+    const response = await admin
       .patch(`/api/v1/books/${existingBookId}`)
       .send({});
     expect(response.body.details.formErrors).toContain(
@@ -259,15 +268,15 @@ describe("book failure cases", () => {
   });
 
   it("returns 400 when the id is too large for the database", async () => {
-    const response = await request(app).delete("/api/v1/books/3000000000");
+    const response = await admin.delete("/api/v1/books/3000000000");
     expect(response.status).toBe(400);
   });
 
   it("clears the cover image url when sent as null", async () => {
-    await request(app)
+    await admin
       .patch(`/api/v1/books/${existingBookId}`)
       .send({ coverImageUrl: "https://example.com/cover.jpg" });
-    const response = await request(app)
+    const response = await admin
       .patch(`/api/v1/books/${existingBookId}`)
       .send({ coverImageUrl: null });
     expect(response.status).toBe(200);
@@ -276,14 +285,14 @@ describe("book failure cases", () => {
   });
 
   it("returns 400 when a required field is sent as null", async () => {
-    const response = await request(app)
+    const response = await admin
       .patch(`/api/v1/books/${existingBookId}`)
       .send({ title: null });
     expect(response.status).toBe(400);
   });
 
   it("returns 400 when the cover image url is not http or https", async () => {
-    const response = await request(app)
+    const response = await admin
       .patch(`/api/v1/books/${existingBookId}`)
       .send({ coverImageUrl: "javascript:alert(1)" });
     expect(response.status).toBe(400);
@@ -291,14 +300,14 @@ describe("book failure cases", () => {
   });
 
   it("returns 404 when updating a book that does not exist", async () => {
-    const response = await request(app)
+    const response = await admin
       .patch(`/api/v1/books/${missingBookId}`)
       .send({ readStatus: "read" });
     expect(response.status).toBe(404);
   });
 
   it("returns 404 when deleting a book that does not exist", async () => {
-    const response = await request(app).delete(`/api/v1/books/${missingBookId}`);
+    const response = await admin.delete(`/api/v1/books/${missingBookId}`);
     expect(response.status).toBe(404);
   });
 });
@@ -307,7 +316,7 @@ describe("read status and genre", () => {
   const createdBookIds: number[] = [];
 
   async function createBook(data: object) {
-    const response = await request(app)
+    const response = await admin
       .post("/api/v1/books")
       .send({ title: "Dune", author: "Frank Herbert", ...data });
     if (response.body.id) {
@@ -318,7 +327,7 @@ describe("read status and genre", () => {
 
   afterAll(async () => {
     for (const id of createdBookIds) {
-      await request(app).delete(`/api/v1/books/${id}`);
+      await admin.delete(`/api/v1/books/${id}`);
     }
   });
 
@@ -348,7 +357,7 @@ describe("read status and genre", () => {
   it("reuses an existing genre's spelling when editing", async () => {
     await createBook({ genre: "Zzedit Genre" });
     const created = await createBook({ genre: "Placeholder" });
-    const response = await request(app)
+    const response = await admin
       .patch(`/api/v1/books/${created.body.id}`)
       .send({ genre: "ZZEDIT GENRE" });
     expect(response.body.genre).toBe("Zzedit Genre");
@@ -356,7 +365,7 @@ describe("read status and genre", () => {
 
   it("lets a book fix the capitalization of its own genre", async () => {
     const created = await createBook({ genre: "zzfix genre" });
-    const response = await request(app)
+    const response = await admin
       .patch(`/api/v1/books/${created.body.id}`)
       .send({ genre: "Zzfix Genre" });
     expect(response.body.genre).toBe("Zzfix Genre");
@@ -374,7 +383,7 @@ describe("read status and genre", () => {
     await createBook({ genre: "Zzmatch Genre" });
     await createBook({ genre: "Zzlist Genre" });
     await createBook({ genre: "zzlist genre" });
-    const response = await request(app).get("/api/v1/genres");
+    const response = await admin.get("/api/v1/genres");
     expect(response.status).toBe(200);
     const matches = response.body.filter((genre: string) =>
       genre.toLowerCase().startsWith("zzlist"),

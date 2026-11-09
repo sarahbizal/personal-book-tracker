@@ -6,7 +6,7 @@
 
 ## Goal
 
-I'm the only admin and everyone else is a viewer. Viewers can browse everything except the text of my reviews. They can still see the buttons that change things, but clicking one gets them a toast instead of a change. The server is what actually enforces this. The toast is just the friendly version of a `403`.
+I'm the only admin and everyone else is a viewer. Viewers can browse everything except the text of my reviews. They can still see the buttons that change things, but clicking one gets them a toast instead of a change. The server is what actually enforces this. The toast is just the friendly version of a `401`.
 
 ## Decisions
 
@@ -28,7 +28,7 @@ I'm the only admin and everyone else is a viewer. Viewers can browse everything 
 | Review text | Not in the API response at all | Yes |
 | Add, edit, and delete buttons | Visible. Clicking shows the toast | Work normally |
 | Header | Log in button | Admin badge and Log out button |
-| Calling the API with curl or Postman | Writes return `403` and reads skip review text | Works with the cookie |
+| Calling the API with curl or Postman | Writes return `401` and reads skip review text | Works with the cookie |
 
 ## How it works
 
@@ -43,16 +43,16 @@ I'm the only admin and everyone else is a viewer. Viewers can browse everything 
   - `GET /auth/me` returns `{ isAdmin: true | false }` so the client knows which buttons should work.
 - **Middleware.**
   - `loadSession` runs on every request. It reads the cookie, looks up the hash, sets `req.isAdmin`, and pushes `expires_at` forward when the session is used.
-  - `requireAdmin` goes on every POST, PATCH, and DELETE for books and ratings. It returns `403` if `req.isAdmin` is false.
-  - An `Origin` check on write routes rejects requests from any site not in `CORS_ORIGIN`. `SameSite=Strict` already blocks most CSRF, and this is a cheap second layer.
-- **Reads.** `GET /ratings` sets `bookReviewText` to `null` for viewers. Anything else that returns ratings later has to do the same, so I'll put that in one helper.
+  - `requireAdmin` covers every request that isn't a GET, HEAD, or OPTIONS once the auth routes have had their turn. It returns `401` if `req.isAdmin` is false. I first planned on `403`, but a viewer isn't logged in at all, so `401` fits better. It sits on the whole API router after the auth routes instead of on each route, so a write route I add later is protected without me remembering to do it. That also means a viewer who sends a POST to a path that doesn't exist gets `401` instead of `404`. I'm fine with that since it doesn't hint at which routes exist.
+  - An `Origin` check on write routes rejects requests from any site not in `CORS_ORIGIN` with a `403`. It covers login and logout too. If a request has no `Origin` header at all, it moves on to `requireAdmin`, since curl and other non-browser clients usually don't send one. `SameSite=Strict` already blocks most CSRF, and this is a cheap second layer.
+- **Reads.** `GET /ratings` sets `bookReviewText` to `null` for viewers and sends `Cache-Control: private, no-store` so a shared cache can't hand my version to someone else. Anything else that returns ratings later has to do the same. That includes `/books` if I ever add an `include` for its `ratings` relation.
 - **Rate limiting.** `POST /auth/login` gets a strict limit, around 5 tries per 15 minutes per IP. This overlaps with #22 so I might do both together.
 
 ### Client
 
 - **Same origin in dev.** A Vite proxy sends `/api/*` to `localhost:3000`. The browser sees one origin, which keeps the cookie first-party and means I don't need CORS credentials setup. `fetchJson` already adds `/api/v1` (#20), so `VITE_API_URL` becomes an empty string in dev. The `if (!API_URL)` check in `api.ts` rejects an empty string right now, so I'll change it to only reject a missing value.
 - **Auth context.** An `AuthProvider` calls `/auth/me` on load and shares `isAdmin`, `login`, and `logout` through React context.
-- **Permission check.** A small `useAdminAction` hook wraps button handlers. If I'm not admin it shows the toast instead of running the action. `fetchJson` also shows the toast on any `403`, so a missed button still ends up in the right place.
+- **Permission check.** A small `useAdminAction` hook wraps button handlers. If I'm not admin it shows the toast instead of running the action. `fetchJson` also shows the toast on any `401`, so a missed button still ends up in the right place.
 - **Login page.** A `/login` route with one password field and a submit button. After it works, it sends me back to the main page.
 - **Toasts.** `<Toaster />` from `sonner` goes in `main.tsx`, styled to match the medieval theme.
 
@@ -63,10 +63,10 @@ Cookies are easiest when the client and API share one site. I'll decide the deta
 ## Build order
 
 - [x] 1. Add the `sessions` table with a Prisma Next migration
-- [ ] 2. Add the hash-password script and `ADMIN_PASSWORD_HASH` to `.env.example`
-- [ ] 3. Add `/auth/login`, `/auth/logout`, and `/auth/me` with tests
-- [ ] 4. Add `loadSession`, `requireAdmin`, and the `Origin` check, then put them on the write routes with tests for `403`
-- [ ] 5. Strip `bookReviewText` for viewers with a test for both roles
+- [x] 2. Add the hash-password script and `ADMIN_PASSWORD_HASH` to `.env.example`
+- [x] 3. Add `/auth/login`, `/auth/logout`, and `/auth/me` with tests
+- [x] 4. Add `loadSession`, `requireAdmin`, and the `Origin` check, then put them on the write routes with tests for `401`
+- [x] 5. Strip `bookReviewText` for viewers with a test for both roles
 - [ ] 6. Add rate limiting to login
 - [ ] 7. Add the Vite proxy and set `VITE_API_URL` to an empty string in dev
 - [ ] 8. Add `sonner`, `AuthProvider`, and `useAdminAction`
@@ -75,5 +75,5 @@ Cookies are easiest when the client and API share one site. I'll decide the deta
 
 ## Open questions
 
-- Chrome and Firefox allow `Secure` cookies on `http://localhost` but Safari might not. I'm planning to only turn on `Secure` and `__Host-` in production. Is that the right split?
+- ~~Chrome and Firefox allow `Secure` cookies on `http://localhost` but Safari might not. I'm planning to only turn on `Secure` and `__Host-` in production. Is that the right split?~~ **Resolved:** `Secure` and `__Host-` are on everywhere unless `INSECURE_COOKIES=true`, which I only set locally and in `.env.test`. I didn't key it off `NODE_ENV` because Vitest sets that to `test`, and supertest won't resend `Secure` cookies over plain http.
 - Should `app.ts` get split into routers (#28) before this lands? Auth adds three routes and two middlewares to a file that's already long.
