@@ -11,7 +11,7 @@ import { Temporal } from "temporal-polyfill";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { z } from "zod";
-import { createAuth } from "./auth.js";
+import { createAuth, requireAdmin } from "./auth.js";
 import { isValidPasswordHash } from "./password.js";
 
 const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
@@ -20,20 +20,22 @@ if (!adminPasswordHash || !isValidPasswordHash(adminPasswordHash)) {
     "ADMIN_PASSWORD_HASH is missing or malformed. Run npm run hash-password and put the result in server/.env (or server/.env.test for tests)",
   );
 }
-const { loadSession, authRouter } = createAuth({
-  adminPasswordHash,
-  //Fails safe: anything but an explicit "true" keeps Secure cookies on
-  secureCookies: process.env.INSECURE_COOKIES !== "true",
-});
-
 export const app: Express = express();
 
 //Comma-separated list of sites allowed to call the API. Defaults to the Vite dev server
-//Browsers send origins without a trailing slash, so strip any to make them match
+//URL.origin matches what browsers send (lowercase host, no default port or trailing slash) and throws on a typo
 export const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
   .split(",")
-  .map((origin) => origin.trim().replace(/\/+$/, ""))
-  .filter(Boolean);
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+  .map((origin) => new URL(origin).origin);
+
+const { checkOrigin, loadSession, authRouter } = createAuth({
+  adminPasswordHash,
+  //Fails safe: anything but an explicit "true" keeps Secure cookies on
+  secureCookies: process.env.INSECURE_COOKIES !== "true",
+  allowedOrigins: corsOrigins,
+});
 
 app.use(
   cors({
@@ -47,8 +49,11 @@ app.use(cookieParser());
 //Router middleware (like auth guards) must be registered before the routes it protects
 const api = express.Router();
 app.use("/api/v1", api);
+api.use(checkOrigin);
 api.use(loadSession);
 api.use("/auth", authRouter);
+//Every write route below this line needs admin, including ones added later
+api.use(requireAdmin);
 
 await db.connect({ url: process.env.DATABASE_URL! });
 
@@ -135,7 +140,13 @@ api.get("/ratings", async (req: Request, res: Response) => {
     "bookReviewText",
     "dateFinished",
   ).all();
-  res.json(ratings);
+  //The body depends on who's asking, so a shared cache must never reuse it
+  res.set("Cache-Control", "private, no-store");
+  res.json(
+    req.isAdmin
+      ? ratings
+      : ratings.map((rating) => ({ ...rating, bookReviewText: null })),
+  );
 });
 
 api.get("/books", async (req: Request, res: Response) => {

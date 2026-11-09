@@ -21,12 +21,14 @@ declare global {
 export interface AuthConfig {
   adminPasswordHash: string;
   secureCookies: boolean;
+  allowedOrigins: string[];
 }
 
 const SESSION_HOURS = 30 * 24;
 //Renew once the session is more than a day old, so most requests skip the write
 const RENEW_AFTER_HOURS = 24;
 const TOKEN_BYTES = 32;
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 const loginSchema = z.object({ password: z.string().min(1).max(256) });
 
@@ -40,7 +42,34 @@ function deleteSession(token: string) {
   }).deleteAll();
 }
 
-export function createAuth({ adminPasswordHash, secureCookies }: AuthConfig) {
+//Runs after the auth router, so login and logout stay reachable for viewers
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (SAFE_METHODS.has(req.method) || req.isAdmin === true) {
+    next();
+    return;
+  }
+  res.status(401).json({ error: "Log in as admin to do that" });
+}
+
+export function createAuth({
+  adminPasswordHash,
+  secureCookies,
+  allowedOrigins,
+}: AuthConfig) {
+  //A missing Origin falls through to requireAdmin, since non-browser clients often don't send one
+  function checkOrigin(req: Request, res: Response, next: NextFunction) {
+    const origin = req.get("Origin");
+    if (
+      SAFE_METHODS.has(req.method) ||
+      origin === undefined ||
+      allowedOrigins.includes(origin)
+    ) {
+      next();
+      return;
+    }
+    res.status(403).json({ error: "Requests from this site aren't allowed" });
+  }
+
   //__Host- makes the browser require Secure, Path=/ and no Domain, so it only works over HTTPS
   const cookieName = secureCookies ? "__Host-session" : "session";
   //clearCookie only removes a cookie whose name and attributes match, so both share these
@@ -135,5 +164,5 @@ export function createAuth({ adminPasswordHash, secureCookies }: AuthConfig) {
     res.json({ isAdmin: req.isAdmin === true });
   });
 
-  return { loadSession, authRouter };
+  return { checkOrigin, loadSession, authRouter };
 }

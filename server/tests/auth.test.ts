@@ -7,9 +7,7 @@ import { Temporal } from "temporal-polyfill";
 import { app } from "../src/app.js";
 import { createAuth } from "../src/auth.js";
 import { db } from "../prisma/db.js";
-
-//Matches ADMIN_PASSWORD_HASH in .env.test
-const TEST_PASSWORD = "test-admin-password";
+import { TEST_PASSWORD } from "./helpers.js";
 
 const createdTokens: string[] = [];
 
@@ -232,6 +230,7 @@ describe("secure cookies", () => {
   const { loadSession, authRouter } = createAuth({
     adminPasswordHash: process.env.ADMIN_PASSWORD_HASH!,
     secureCookies: true,
+    allowedOrigins: [],
   });
   const secureApp = express();
   secureApp.use(express.json(), cookieParser(), loadSession);
