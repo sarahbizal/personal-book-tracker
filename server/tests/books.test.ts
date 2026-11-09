@@ -21,6 +21,7 @@ describe("GET /books", () => {
 
   beforeAll(async () => {
     const createdBook = await admin.post("/api/v1/books").send(createData);
+    expect(createdBook.status).toBe(201);
     existingBookId = createdBook.body.id;
   });
 
@@ -89,7 +90,8 @@ describe("POST /books", () => {
         "https://en.wikipedia.org/wiki/File:Moby-Dick_FE_title_page.jpg",
     };
     const book = await admin.post("/api/v1/books").send(data);
-    expect(book).toBeTruthy();
+    expect(book.status).toBe(201);
+    createdBookId = book.body.id;
     expect(book.body.title).toBe(data.title);
     expect(book.body.author).toBe(data.author);
     expect(book.body.genre).toBe(data.genre);
@@ -114,6 +116,7 @@ describe("PATCH /books/:id", () => {
     expect(Array.isArray(books.body)).toBe(true);
 
     const createdBook = await admin.post("/api/v1/books").send(createData);
+    expect(createdBook.status).toBe(201);
     existingBookId = createdBook.body.id;
   });
 
@@ -174,12 +177,14 @@ describe("DELETE /books/:id", () => {
     expect(Array.isArray(books.body)).toBe(true);
 
     const createdBook = await admin.post("/api/v1/books").send(createData);
+    expect(createdBook.status).toBe(201);
     existingBookId = createdBook.body.id;
   });
 
   it("deletes individual books", async () => {
     const deleteBook = await admin.delete(`/api/v1/books/${existingBookId}`);
-    expect(deleteBook).toBeTruthy();
+    expect(deleteBook.status).toBe(200);
+    expect(deleteBook.body.id).toBe(existingBookId);
 
     const checkBooks = await admin.get("/api/v1/books");
     const stillExists = checkBooks.body.some(
@@ -199,6 +204,7 @@ describe("book failure cases", () => {
       author: "Mary Shelley",
       genre: "Gothic Horror",
     });
+    expect(createdBook.status).toBe(201);
     existingBookId = createdBook.body.id;
   });
 
