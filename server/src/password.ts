@@ -45,6 +45,10 @@ function parseHash(stored: string) {
   };
 }
 
+export function isValidPasswordHash(stored: string): boolean {
+  return parseHash(stored) !== null;
+}
+
 //Uses ":" instead of "$" because env loaders expand "$"
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(SALT_BYTES);

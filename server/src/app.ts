@@ -9,7 +9,22 @@ import "dotenv/config";
 import { db } from "../prisma/db.js";
 import { Temporal } from "temporal-polyfill";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { z } from "zod";
+import { createAuth } from "./auth.js";
+import { isValidPasswordHash } from "./password.js";
+
+const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+if (!adminPasswordHash || !isValidPasswordHash(adminPasswordHash)) {
+  throw new Error(
+    "ADMIN_PASSWORD_HASH is missing or malformed. Run npm run hash-password and put the result in server/.env (or server/.env.test for tests)",
+  );
+}
+const { loadSession, authRouter } = createAuth({
+  adminPasswordHash,
+  //Fails safe: anything but an explicit "true" keeps Secure cookies on
+  secureCookies: process.env.INSECURE_COOKIES !== "true",
+});
 
 export const app: Express = express();
 
@@ -26,11 +41,14 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use(cookieParser());
 
-//Must come after the body parser and CORS so /api/v1 requests get both.
+//Must come after the body parser, cookie parser, and CORS so /api/v1 requests get all three.
 //Router middleware (like auth guards) must be registered before the routes it protects
 const api = express.Router();
 app.use("/api/v1", api);
+api.use(loadSession);
+api.use("/auth", authRouter);
 
 await db.connect({ url: process.env.DATABASE_URL! });
 
