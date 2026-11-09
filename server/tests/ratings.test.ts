@@ -2,18 +2,11 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { loginAsAdmin, logoutAdmin, type AdminAgent } from "./helpers.js";
 
 let admin: AdminAgent;
-
-beforeAll(async () => {
-  admin = await loginAsAdmin();
-});
-
-afterAll(async () => {
-  await logoutAdmin(admin);
-});
-
 let existingBookId: number | undefined;
 
 beforeAll(async () => {
+  admin = await loginAsAdmin();
+
   const createData = {
     title: "Moby Dick",
     author: "Ernest Hemmingway",
@@ -27,7 +20,17 @@ beforeAll(async () => {
   expect(Array.isArray(books.body)).toBe(true);
 
   const createdBook = await admin.post("/api/v1/books").send(createData);
+  expect(createdBook.status).toBe(201);
   existingBookId = createdBook.body.id;
+});
+
+//Deleting the book also deletes any ratings left on it
+afterAll(async () => {
+  if (existingBookId) {
+    const res = await admin.delete(`/api/v1/books/${existingBookId}`);
+    expect(res.status).toBe(200);
+  }
+  await logoutAdmin(admin);
 });
 
 describe("GET /ratings", () => {
@@ -59,7 +62,8 @@ describe("POST /ratings", () => {
       dateFinished: "2002-01-01",
     };
     const rating = await admin.post("/api/v1/ratings").send(data);
-    expect(rating).toBeTruthy();
+    expect(rating.status).toBe(201);
+    createdRatingId = rating.body.id;
     expect(rating.body.rating).toBe(data.rating);
     expect(rating.body.bookReviewText).toBe(data.bookReviewText);
     expect(rating.body.dateFinished).toBe(data.dateFinished);
@@ -82,6 +86,7 @@ describe("PATCH /ratings/:id", () => {
     };
 
     const createdRating = await admin.post("/api/v1/ratings").send(createData);
+    expect(createdRating.status).toBe(201);
     createdRatingId = createdRating.body.id;
   });
 
@@ -107,7 +112,7 @@ describe("PATCH /ratings/:id", () => {
   it("modifies all rating fields", async () => {
     let updateData = {
       rating: 2,
-      bookReviewText: "Actually decided I don't like it",
+      bookReviewText: "Changed my mind again",
       dateFinished: "2002-04-03",
     };
 
@@ -123,18 +128,20 @@ describe("PATCH /ratings/:id", () => {
 
 describe("DELETE /ratings/:id", () => {
   let createdRatingId: number | undefined;
-  const createData = {
-    bookId: existingBookId,
-    rating: 2,
-    bookReviewText: "Actually decided I don't like it",
-    dateFinished: "2002-04-03",
-  };
 
   beforeAll(async () => {
     const ratings = await admin.get("/api/v1/ratings");
     expect(Array.isArray(ratings.body)).toBe(true);
 
+    //Built here, not in the describe body, which runs before the book exists
+    const createData = {
+      bookId: existingBookId,
+      rating: 2,
+      bookReviewText: "Actually decided I don't like it",
+      dateFinished: "2002-04-03",
+    };
     const createdRatings = await admin.post("/api/v1/ratings").send(createData);
+    expect(createdRatings.status).toBe(201);
     createdRatingId = createdRatings.body.id;
   });
 
@@ -142,7 +149,8 @@ describe("DELETE /ratings/:id", () => {
     const deleteRating = await admin.delete(
       `/api/v1/ratings/${createdRatingId}`,
     );
-    expect(deleteRating).toBeTruthy();
+    expect(deleteRating.status).toBe(200);
+    expect(deleteRating.body.id).toBe(createdRatingId);
 
     const checkRatings = await admin.get("/api/v1/ratings");
     const stillExists = checkRatings.body.some(
