@@ -12,7 +12,8 @@
     "db:migrate:test": "DOTENV_CONFIG_PATH=.env.test DOTENV_CONFIG_OVERRIDE=true prisma db migrate",
     "db:status": "prisma migration status",
     "db:status:test": "DOTENV_CONFIG_PATH=.env.test DOTENV_CONFIG_OVERRIDE=true prisma migration status",
-    "hash-password": "tsx scripts/hash-password.ts"
+    "hash-password": "tsx scripts/hash-password.ts",
+    "logout-all": "tsx scripts/logout-all.ts"
   },
   "repository": {
     "type": "git",
@@ -32,6 +33,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.3",
     "temporal-polyfill": "^1.0.4",
     "zod": "^4.6.7"
   },

@@ -10,6 +10,11 @@ const MAX_MEM = 512 * 1024 * 1024;
 //maxmem doesn't limit p, which multiplies CPU time instead of memory
 const MAX_P = 16;
 
+//Each verify holds about 128 MB, so a login flood from many IPs could run the server out of memory
+const MAX_CONCURRENT_VERIFIES = 2;
+let activeVerifies = 0;
+const waitingVerifies: (() => void)[] = [];
+
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 const POSITIVE_INT = /^[1-9]\d*$/;
 
@@ -57,6 +62,22 @@ export async function hashPassword(password: string): Promise<string> {
   return ["scrypt", N, r, p, salt.toString("base64url"), key.toString("base64url")].join(":");
 }
 
+async function withVerifySlot<T>(fn: () => Promise<T>): Promise<T> {
+  if (activeVerifies < MAX_CONCURRENT_VERIFIES) {
+    activeVerifies++;
+  } else {
+    await new Promise<void>((resolve) => waitingVerifies.push(resolve));
+  }
+  try {
+    return await fn();
+  } finally {
+    //Hands the slot straight to the next waiter, so activeVerifies only drops when no one is waiting
+    const next = waitingVerifies.shift();
+    if (next) next();
+    else activeVerifies--;
+  }
+}
+
 //Returns false for a wrong password or a malformed stored hash, so callers have one failure path
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const parsed = parseHash(stored);
@@ -64,7 +85,7 @@ export async function verifyPassword(password: string, stored: string): Promise<
 
   let key: Buffer;
   try {
-    key = await deriveKey(password, parsed.salt, parsed.cost);
+    key = await withVerifySlot(() => deriveKey(password, parsed.salt, parsed.cost));
   } catch {
     //scrypt throws on invalid cost settings
     return false;

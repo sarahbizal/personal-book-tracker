@@ -5,6 +5,7 @@ import express, {
   type Request,
   type Response,
 } from "express";
+import { rateLimit } from "express-rate-limit";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { db } from "../prisma/db.js";
@@ -28,6 +29,8 @@ const SESSION_HOURS = 30 * 24;
 //Renew once the session is more than a day old, so most requests skip the write
 const RENEW_AFTER_HOURS = 24;
 const TOKEN_BYTES = 32;
+const LOGIN_WINDOW_MINUTES = 15;
+const LOGIN_MAX_FAILURES = 5;
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 const loginSchema = z.object({ password: z.string().min(1).max(256) });
@@ -129,7 +132,17 @@ export function createAuth({
     next();
   });
 
-  authRouter.post("/login", async (req: Request, res: Response) => {
+  //Counts live in memory, so each server instance keeps its own. Running several needs a shared store
+  const loginLimiter = rateLimit({
+    windowMs: LOGIN_WINDOW_MINUTES * 60 * 1000,
+    limit: LOGIN_MAX_FAILURES,
+    skipSuccessfulRequests: true,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: { error: "Too many login attempts. Try again later" },
+  });
+
+  authRouter.post("/login", loginLimiter, async (req: Request, res: Response) => {
     //A bad body gets the same answer as a wrong password so it reveals nothing
     const body = loginSchema.safeParse(req.body);
     if (
@@ -144,10 +157,19 @@ export function createAuth({
     const oldToken = readToken(req);
     if (oldToken) await deleteSession(oldToken);
 
+    //Logins are rare, so this is a cheap moment to clear out expired sessions.
+    //A failure here shouldn't block the login, and the next login tries again
+    const now = Temporal.Now.instant();
+    await db.orm.public.Sessions.where((s) => s.expiresAt.lte(now))
+      .deleteAndCount()
+      .catch((err: unknown) => {
+        console.error("Couldn't delete expired sessions", err);
+      });
+
     const token = randomBytes(TOKEN_BYTES).toString("base64url");
     await db.orm.public.Sessions.create({
       tokenHash: hashToken(token),
-      expiresAt: Temporal.Now.instant().add({ hours: SESSION_HOURS }),
+      expiresAt: now.add({ hours: SESSION_HOURS }),
     });
     setSessionCookie(res, token);
     res.json({ isAdmin: true });

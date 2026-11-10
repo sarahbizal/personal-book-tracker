@@ -35,6 +35,21 @@ describe("password hashing", () => {
     expect(await verifyPassword(decomposed, stored)).toBe(true);
   });
 
+  it("answers every verify when more run at once than the cap allows", async () => {
+    const stored = await hashPassword(password);
+    //N=3 isn't a power of 2, so scrypt throws. The slot it held must still be freed
+    const throwsInScrypt = stored.replace(":131072:", ":3:");
+
+    const results = await Promise.all([
+      verifyPassword(password, throwsInScrypt),
+      verifyPassword(password, stored),
+      verifyPassword("wrong horse battery staple", stored),
+      verifyPassword(password, throwsInScrypt),
+      verifyPassword(password, stored),
+    ]);
+    expect(results).toEqual([false, true, false, false, true]);
+  });
+
   describe("returns false for a malformed stored hash", () => {
     //Break one field of a real hash so each case fails only for the reason in its label
     let valid: string[] = [];

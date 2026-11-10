@@ -107,6 +107,17 @@ describe("POST /auth/login", () => {
     expect(await findSession(second)).not.toBeNull();
   });
 
+  it("deletes expired sessions on a successful login", async () => {
+    const { token: expired } = await login();
+    const { token: active } = await login();
+    await setExpiry(expired, Temporal.Now.instant().subtract({ seconds: 1 }));
+
+    await login();
+    expect(await findSession(expired)).toBeNull();
+    expect(await findSession(active)).not.toBeNull();
+  });
+
+  //The shared app allows 5 failed logins per file, so use a fresh createAuth app for more
   it.each([
     ["a wrong password", { password: "not-the-password" }],
     ["a missing password", {}],

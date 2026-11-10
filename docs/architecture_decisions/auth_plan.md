@@ -46,7 +46,11 @@ I'm the only admin and everyone else is a viewer. Viewers can browse everything 
   - `requireAdmin` covers every request that isn't a GET, HEAD, or OPTIONS once the auth routes have had their turn. It returns `401` if `req.isAdmin` is false. I first planned on `403`, but a viewer isn't logged in at all, so `401` fits better. It sits on the whole API router after the auth routes instead of on each route, so a write route I add later is protected without me remembering to do it. That also means a viewer who sends a POST to a path that doesn't exist gets `401` instead of `404`. I'm fine with that since it doesn't hint at which routes exist.
   - An `Origin` check on write routes rejects requests from any site not in `CORS_ORIGIN` with a `403`. It covers login and logout too. If a request has no `Origin` header at all, it moves on to `requireAdmin`, since curl and other non-browser clients usually don't send one. `SameSite=Strict` already blocks most CSRF, and this is a cheap second layer.
 - **Reads.** `GET /ratings` sets `bookReviewText` to `null` for viewers and sends `Cache-Control: private, no-store` so a shared cache can't hand my version to someone else. Anything else that returns ratings later has to do the same. That includes `/books` if I ever add an `include` for its `ratings` relation.
-- **Rate limiting.** `POST /auth/login` gets a strict limit, around 5 tries per 15 minutes per IP. This overlaps with #22 so I might do both together.
+- **Rate limiting.** `POST /auth/login` allows 5 failed tries per 15 minutes per IP with `express-rate-limit`. Successful logins don't count. After 5 failures, every try gets a `429` with a `Retry-After` header until the 15 minutes are up, even the right password. The limit runs before the password check, so a blocked request never reaches scrypt. I'm doing #22's global and write limits in their own PR afterward to keep this one small.
+  - The counts live in memory. That's fine with one server, but if I ever run more than one instance each would keep its own counts, so I'd need a shared store like Redis.
+  - `TRUST_PROXY` is the number of proxies in front of the server. Without it, `req.ip` behind a load balancer would be the proxy's address and everyone would share one limit. I went with a count instead of `true` because `true` trusts whatever `X-Forwarded-For` the browser sends, and then anyone could make up a new IP for every try. I'll set the real value with #23.
+  - Only 2 password checks run at once. Each scrypt check holds about 128 MB, and the per-IP limit doesn't stop a flood from lots of different IPs. I didn't add a global login limit since someone could use it to lock me out.
+- **Session cleanup.** A successful login deletes expired sessions. `npm run logout-all` deletes every session and prints how many it removed, which I'll use if I ever change my password.
 
 ### Client
 
@@ -60,6 +64,8 @@ I'm the only admin and everyone else is a viewer. Viewers can browse everything 
 
 Cookies are easiest when the client and API share one site. I'll decide the details with #23 (AWS target). Either CloudFront sends `/api/*` to the backend, or the client and API live on subdomains of one domain. It's a good reason to do #20 (`/api/v1` prefix) around the same time.
 
+When I deploy, I have to set `TRUST_PROXY` and check that `req.ip` shows my real IP and not the proxy's. If I skip it, every request looks like it came from the proxy, and anyone could lock me out of login with 5 wrong guesses.
+
 ## Build order
 
 - [x] 1. Add the `sessions` table with a Prisma Next migration
@@ -67,7 +73,7 @@ Cookies are easiest when the client and API share one site. I'll decide the deta
 - [x] 3. Add `/auth/login`, `/auth/logout`, and `/auth/me` with tests
 - [x] 4. Add `loadSession`, `requireAdmin`, and the `Origin` check, then put them on the write routes with tests for `401`
 - [x] 5. Strip `bookReviewText` for viewers with a test for both roles
-- [ ] 6. Add rate limiting to login
+- [x] 6. Add rate limiting to login
 - [ ] 7. Add the Vite proxy and set `VITE_API_URL` to an empty string in dev
 - [ ] 8. Add `sonner`, `AuthProvider`, and `useAdminAction`
 - [ ] 9. Build the login page and the header Log in and Log out buttons

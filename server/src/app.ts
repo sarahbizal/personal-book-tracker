@@ -22,6 +22,18 @@ if (!adminPasswordHash || !isValidPasswordHash(adminPasswordHash)) {
 }
 export const app: Express = express();
 
+//How many proxies sit in front of the server, so req.ip is the browser's address and not the proxy's.
+//A count instead of true, since true would trust an X-Forwarded-For the browser made up
+const trustProxy = process.env.TRUST_PROXY;
+if (trustProxy) {
+  if (!/^[1-9]\d*$/.test(trustProxy)) {
+    throw new Error(
+      `TRUST_PROXY must be the number of proxies in front of the server, got: ${trustProxy}`,
+    );
+  }
+  app.set("trust proxy", Number(trustProxy));
+}
+
 //Comma-separated list of sites allowed to call the API. Defaults to the Vite dev server
 //URL.origin matches what browsers send (lowercase host, no default port or trailing slash) and throws on a typo
 export const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
