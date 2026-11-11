@@ -104,7 +104,7 @@ const bookListQuery = z.object({
 - Respond with `429 Too Many Requests` and a `Retry-After` header. The library does both by default.
 - If the deploy sits behind a load balancer, set Express's `trust proxy` so the limiter sees real client IPs and not the balancer's IP.
 
-*Status:* Fixed on 2026-11-11 (#22). One API-wide limit of 300 requests per 15 minutes per IP on `/api/v1`, with `/health` left out so health checks can't get blocked. 100 would only cover about 25 page loads. I skipped the stricter write limit because every write already needs my admin session.
+*Status:* Fixed on 2026-11-11 (#22). One API-wide limit of 300 requests per 15 minutes per IP on `/api/v1`, with `/health` left out so health checks can't get blocked. A page load makes 2 API calls today and will make 4 once it also checks login and loads ratings, so 100 would only cover about 25 page loads. I skipped the stricter write limit because every write already needs my admin session.
 
 ### 6. [Later] No pagination, and `GET /books` has no sort order
 

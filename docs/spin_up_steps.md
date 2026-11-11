@@ -15,6 +15,13 @@
 1. Run `npx tsx src/index.ts` to compile and test the server
 
 
+*Client Steps*
+
+1. The first time, run `cp .env.example .env` from `client/` and leave `VITE_API_URL` empty so requests go through the Vite proxy
+2. Start the server first, then run `npm run dev` from `client/`
+3. Open http://localhost:5173. If the server isn't running, the page says "Couldn't reach the server. Is it running?"
+
+
 *Database Setup Steps*
 
 The tables come from the Prisma migrations in `server/migrations/`. The first time the Docker volume is created, `server/init-db/create-test-db.sql` makes an empty `booktracker_test` database next to the dev one, and then the migrations build the tables in both. This is a one time setup.

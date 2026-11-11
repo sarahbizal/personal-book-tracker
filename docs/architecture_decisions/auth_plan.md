@@ -66,6 +66,10 @@ Cookies are easiest when the client and API share one site. I'll decide the deta
 
 When I deploy, I have to set `TRUST_PROXY` and check that `req.ip` shows my real IP and not the proxy's. If I skip it, every request looks like it came from the proxy, and anyone could lock me out of login with 5 wrong guesses. It also puts every visitor on one shared API limit, so a few hundred requests from anyone would lock everybody out of the API.
 
+I also have to set `CORS_ORIGIN` to the production site's origin, even if the client and API end up on the same one. `checkOrigin` uses that same list, so if it still says `localhost:5173` every login and write gets a `403`.
+
+The build doesn't get `client/.env`, so I have to set `VITE_API_URL` in the build settings (empty for the same origin) or every request fails.
+
 ## Build order
 
 - [x] 1. Add the `sessions` table with a Prisma Next migration
@@ -74,7 +78,7 @@ When I deploy, I have to set `TRUST_PROXY` and check that `req.ip` shows my real
 - [x] 4. Add `loadSession`, `requireAdmin`, and the `Origin` check, then put them on the write routes with tests for `401`
 - [x] 5. Strip `bookReviewText` for viewers with a test for both roles
 - [x] 6. Add rate limiting to login
-- [ ] 7. Add the Vite proxy and set `VITE_API_URL` to an empty string in dev
+- [x] 7. Add the Vite proxy and set `VITE_API_URL` to an empty string in dev
 - [ ] 8. Add `sonner`, `AuthProvider`, and `useAdminAction`
 - [ ] 9. Build the login page and the header Log in and Log out buttons
 - [ ] 10. Hook `useAdminAction` into the buttons as they get built

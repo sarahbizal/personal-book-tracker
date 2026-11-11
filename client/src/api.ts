@@ -6,8 +6,11 @@ const API_VERSION_PREFIX = "/api/v1";
 
 //Fetches JSON from the API and throws a readable error when the request fails
 export async function fetchJson<T>(path: string): Promise<T> {
-  if (!API_URL) {
-    throw new Error("VITE_API_URL is not set. Add it to client/.env.");
+  //An empty string is valid: it means same origin, which the Vite proxy handles in dev
+  if (API_URL === undefined) {
+    throw new Error(
+      'VITE_API_URL is not set. Add VITE_API_URL="" to client/.env to use the Vite proxy.',
+    );
   }
 
   let response: Response;
