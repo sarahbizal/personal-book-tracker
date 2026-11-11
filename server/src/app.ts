@@ -10,6 +10,7 @@ import { db } from "../prisma/db.js";
 import { Temporal } from "temporal-polyfill";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { createAuth, requireAdmin } from "./auth.js";
 import { isValidPasswordHash } from "./password.js";
@@ -61,6 +62,16 @@ app.use(cookieParser());
 //Router middleware (like auth guards) must be registered before the routes it protects
 const api = express.Router();
 app.use("/api/v1", api);
+//First, so a flood is cut off before any session lookups. /health stays unlimited for the host's health checks
+api.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 300,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: { error: "Too many requests. Try again later" },
+  }),
+);
 api.use(checkOrigin);
 api.use(loadSession);
 api.use("/auth", authRouter);
