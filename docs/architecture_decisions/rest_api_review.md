@@ -17,7 +17,7 @@ Work through these in order. Each one is a self-contained chunk.
 - [ ] 2. Validate `?title=` with zod and add a `?genre=` filter
 - [x] 3. Add an `/api/v1` prefix before any response shapes change
 - [ ] 4. Guard POST routes against duplicates
-- [ ] 5. Add rate limiting before deploying
+- [x] 5. Add rate limiting before deploying
 
 Later (no pressure):
 - [ ] Add pagination with an explicit sort
@@ -103,6 +103,8 @@ const bookListQuery = z.object({
 - Add `express-rate-limit` with a generous global limit (for example 100 requests per 15 minutes per IP) and a stricter one on POST, PATCH, and DELETE.
 - Respond with `429 Too Many Requests` and a `Retry-After` header. The library does both by default.
 - If the deploy sits behind a load balancer, set Express's `trust proxy` so the limiter sees real client IPs and not the balancer's IP.
+
+*Status:* Fixed on 2026-11-11 (#22). One API-wide limit of 300 requests per 15 minutes per IP on `/api/v1`, with `/health` left out so health checks can't get blocked. 100 would only cover about 25 page loads. I skipped the stricter write limit because every write already needs my admin session.
 
 ### 6. [Later] No pagination, and `GET /books` has no sort order
 
