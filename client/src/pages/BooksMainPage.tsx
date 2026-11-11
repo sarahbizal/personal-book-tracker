@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import Header from "../components/layout/Header";
 import SideBar from "../components/layout/SideBar";
 import { fetchJson } from "../api";
+import { useAuth } from "../components/auth/AuthContext";
 
 //Directly renders components for now. Eventually will be swapped out for wrapper component and the props will pass through them.
 function BooksMainPage() {
+  const { isAdmin, logout } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
   //null means no genre is selected, so all books show. Not used for filtering yet: /books only supports ?title=
@@ -15,6 +17,8 @@ function BooksMainPage() {
   const [search, setSearch] = useState({ title: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  //Separate from error, which means the books failed and hides the grid
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   useEffect(() => {
     //A newer search (or closing the page) sets ignore, so a slower older response is dropped
@@ -78,6 +82,15 @@ function BooksMainPage() {
     setSearch({ title });
   };
 
+  const handleLogout = async () => {
+    setLogoutError(null);
+    try {
+      await logout();
+    } catch (err) {
+      setLogoutError((err as Error).message);
+    }
+  };
+
   let content;
   if (isLoading) {
     content = <p role="status">Loading books...</p>;
@@ -92,12 +105,17 @@ function BooksMainPage() {
 
   return (
     <div>
-      <Header onSearch={handleSearch} />
+      <Header
+        onSearch={handleSearch}
+        isAdmin={isAdmin}
+        onLogout={handleLogout}
+      />
       <SideBar
         genres={genres}
         selectedGenre={selectedGenre}
         onSelectGenre={handleSelectGenre}
       />
+      {logoutError && <p role="alert">{logoutError}</p>}
       {error && <p role="alert">{error}</p>}
       {content}
     </div>

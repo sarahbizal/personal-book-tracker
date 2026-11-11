@@ -58,6 +58,7 @@ I'm the only admin and everyone else is a viewer. Viewers can browse everything 
 - **Auth context.** An `AuthProvider` calls `/auth/me` on load and shares `isAdmin`, `login`, and `logout` through React context.
 - **Permission check.** A small `useAdminAction` hook wraps button handlers. If I'm not admin it shows the toast instead of running the action. `fetchJson` also shows the toast on any `401`, so a missed button still ends up in the right place.
 - **Login page.** A `/login` route with one password field and a submit button. After it works, it sends me back to the main page.
+- **Data that depends on who's asking.** `GET /ratings` hides my review text from viewers, so once the client shows ratings, that fetch needs `isAdmin` in its effect dependencies. Otherwise it keeps the old version after I log in or out.
 - **Toasts.** `<Toaster />` from `sonner` goes in `main.tsx`, styled to match the medieval theme.
 
 ### Production
@@ -79,9 +80,8 @@ The build doesn't get `client/.env`, so I have to set `VITE_API_URL` in the buil
 - [x] 5. Strip `bookReviewText` for viewers with a test for both roles
 - [x] 6. Add rate limiting to login
 - [x] 7. Add the Vite proxy and set `VITE_API_URL` to an empty string in dev
-- [ ] 8. Add `sonner`, `AuthProvider`, and `useAdminAction`
-- [ ] 9. Build the login page and the header Log in and Log out buttons
-- [ ] 10. Hook `useAdminAction` into the buttons as they get built
+- [x] 8. Add `AuthProvider`, the login page, and the header Log in and Log out buttons. I combined two steps here since nothing changes data from the client yet, so the toast pieces would have had nothing to use them on
+- [ ] 9. Add `sonner` and `useAdminAction` with the first button that changes data, and hook it into the rest as they get built
 
 ## Open questions
 

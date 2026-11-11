@@ -3,6 +3,7 @@ import "./App.css";
 import BookDetailPage from "./pages/BookDetailPage";
 import BooksMainPage from "./pages/BooksMainPage";
 import BookTubePage from "./pages/BookTubePage";
+import LoginPage from "./pages/LoginPage";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Route index element={<BooksMainPage />} />
         <Route path="/books/:id" element={<BookDetailPage />} />
         <Route path="/booktube" element={<BookTubePage />} />
+        <Route path="/login" element={<LoginPage />} />
       </Route>
     </Routes>
   );
