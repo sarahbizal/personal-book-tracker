@@ -4,8 +4,16 @@ const API_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, "");
 //The version lives in code, not the env var, because this code is written against v1's response shapes
 const API_VERSION_PREFIX = "/api/v1";
 
+interface RequestOptions {
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  body?: unknown;
+}
+
 //Fetches JSON from the API and throws a readable error when the request fails
-export async function fetchJson<T>(path: string): Promise<T> {
+export async function fetchJson<T>(
+  path: string,
+  { method = "GET", body }: RequestOptions = {},
+): Promise<T> {
   //An empty string is valid: it means same origin, which the Vite proxy handles in dev
   if (API_URL === undefined) {
     throw new Error(
@@ -15,16 +23,29 @@ export async function fetchJson<T>(path: string): Promise<T> {
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${API_VERSION_PREFIX}${path}`);
+    response = await fetch(`${API_URL}${API_VERSION_PREFIX}${path}`, {
+      method,
+      ...(body === undefined
+        ? {}
+        : {
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          }),
+    });
   } catch {
     throw new Error("Couldn't reach the server. Is it running?");
   }
 
   if (!response.ok) {
-    const body = await response.json().catch(() => null);
+    const errorBody = await response.json().catch(() => null);
     throw new Error(
-      body?.error ?? `Request failed with status ${response.status}`,
+      errorBody?.error ?? `Request failed with status ${response.status}`,
     );
+  }
+
+  //Logout answers with 204 and no body, which response.json() would reject
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   try {
